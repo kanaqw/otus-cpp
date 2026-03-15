@@ -58,7 +58,7 @@ void print_ip(std::vector<std::vector<std::string>> ip_pool){
     }
 }
 
-int main(int argc, char const *argv[])
+int main()
 {
 
     std::string file_path = "../ip_filter.tsv";
