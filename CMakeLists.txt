@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
-set(PROJECT_VESRION 0.0.${PATCH_VERSION})
+set(PROJECT_VERSION 0.0.${PATCH_VERSION})
 
-project(ip_filter VERSION ${PROJECT_VESRION})
-
-option(WITH_BOOST_TEST "Whether to build Boost test" ON)
+project(ip_filter VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
 
@@ -35,11 +33,7 @@ if (MSVC)
     target_compile_options(ip_filter PRIVATE
         /W4
     )
-    if(WITH_BOOST_TEST)
-        target_compile_options(test_version PRIVATE
-            /W4
-        )
-    endif()
+
 else ()
     target_compile_options(ip_filter_cli PRIVATE
         -Wall -Wextra -pedantic -Werror
