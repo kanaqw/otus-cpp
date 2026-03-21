@@ -1,18 +1,6 @@
-#include <cassert>
-#include <cstdlib>
-#include <iostream>
-#include <string>
-#include <fstream>
+#include "ip_filter.hpp"
 
-#include <sstream>
-#include <vector>
 
-// ("",  '.') -> [""]
-// ("11", '.') -> ["11"]
-// ("..", '.') -> ["", "", ""]
-// ("11.", '.') -> ["11", ""]
-// (".11", '.') -> ["", "11"]
-// ("11.22", '.') -> ["11", "22"]
 std::vector<std::string> split(const std::string &str, char d)
 {
     std::vector<std::string> r;
@@ -58,25 +46,35 @@ void print_ip(std::vector<std::vector<std::string>> ip_pool){
     }
 }
 
-int main()
+int IpFilter::filter_ip_addresses()
 {
-
-    std::string file_path = "../ip_filter.tsv";
     try
     {
         std::vector<std::vector<std::string>> ip_pool;
-        std::ifstream file(file_path); 
 
-        if (!file.is_open()) {
-            std::cerr << "Error opening file: " << file_path << std::endl;
-            return 1;
+        if (filepath_.empty()){
+            std::cerr << "filepath is empty, reading from cin " << std::endl;
+
+            std::string line;
+            while (std::getline(std::cin, line)) {
+                std::vector<std::string> v = split(line, '\t');
+                ip_pool.push_back(split(v.at(0), '.'));
+            }
+        } else {
+            std::string file_path = filepath_;
+            std::ifstream file(filepath_); 
+
+            if (!file.is_open()) {
+                std::cerr << "Error opening file: " << filepath_ << std::endl;
+                return 1;
+            }
+
+            for(std::string line; std::getline(file, line);) {
+                std::vector<std::string> v = split(line, '\t');
+                ip_pool.push_back(split(v.at(0), '.'));
+            }
         }
 
-        for(std::string line; std::getline(file, line);)
-        {
-            std::vector<std::string> v = split(line, '\t');
-            ip_pool.push_back(split(v.at(0), '.'));
-        }
 
         // TODO reverse lexicographically sort
         for (auto i = ip_pool.begin(); i != ip_pool.end(); ++i) {
