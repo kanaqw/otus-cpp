@@ -10,7 +10,10 @@ option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 configure_file(version.h.in version.h)
 
 add_executable(ip_filter_cli main.cpp)
-add_library(ip_filter_cli ip_filter/ip_filter.cpp)
+set(project_srcs
+    ip_filter/ip_filter.cpp
+    )
+add_library(ip_filter ${project_srcs})
 
 set_target_properties(ip_filter_cli ip_filter PROPERTIES
     CXX_STANDARD 14
