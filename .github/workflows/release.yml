@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - allocator
       - feature/github_actions
 
 jobs:
