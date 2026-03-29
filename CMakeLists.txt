@@ -9,7 +9,7 @@ configure_file(version.h.in version.h)
 
 add_executable(allocator_cli main.cpp)
 
-set_target_properties(ip_filter_cli ip_filter PROPERTIES
+set_target_properties(allocator_cli allocator PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
