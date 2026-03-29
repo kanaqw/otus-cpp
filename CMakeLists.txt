@@ -9,7 +9,7 @@ configure_file(version.h.in version.h)
 
 add_executable(allocator_cli main.cpp)
 
-set_target_properties(allocator_cli allocator PROPERTIES
+set_target_properties(allocator_cli PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
@@ -18,15 +18,9 @@ if (MSVC)
     target_compile_options(allocator_cli PRIVATE
         /W4
     )
-    target_compile_options(allocator PRIVATE
-        /W4
-    )
 
 else ()
     target_compile_options(allocator_cli PRIVATE
-        -Wall -Wextra -pedantic -Werror
-    )
-    target_compile_options(allocator PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
 endif()
