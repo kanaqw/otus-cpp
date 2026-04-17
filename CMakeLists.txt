@@ -10,7 +10,7 @@ configure_file(version.h.in version.h)
 add_executable(sfinae_cli main.cpp)
 
 set_target_properties(sfinae_cli PROPERTIES
-    CXX_STANDARD 14
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
 
