@@ -1,162 +1,65 @@
 #include <iostream>
-#include <map>
-#include <memory>
-#include <stdexcept>
+#include <vector>
+#include <list>
+#include <string>
+#include <tuple>
+#include <type_traits>
 
-unsigned long long factorial(unsigned int n) {
-    return (n == 0) ? 1 : n * factorial(n - 1);
+template <typename T>
+struct is_container {
+    static constexpr bool value = false;
+};
+
+template <typename... Args>
+struct is_container<std::vector<Args...>> { static constexpr bool value = true; };
+
+template <typename... Args>
+struct is_container<std::list<Args...>> { static constexpr bool value = true; };
+
+template <typename T>
+struct is_tuple : std::false_type {};
+
+template <typename... Args>
+struct is_tuple<std::tuple<Args...>> : std::true_type {};
+
+template<typename T>
+void print_ip(T input_val) {
+    if constexpr (std::is_same_v<T, std::string>) {
+        std::cout << input_val;
+    }
+    else if constexpr (std::is_integral_v<T>) {
+        for (int i = sizeof(T) - 1; i >= 0; --i) {
+            std::cout << ((input_val >> (i * 8)) & 0xFF);
+            if (i > 0) std::cout << ".";
+        }
+    }
+    else if constexpr (is_container<T>::value) {
+        bool first = true;
+        for (const auto& val : input_val) {
+            if (!first) std::cout << ".";
+            std::cout << val;
+            first = false;
+        }
+    }
+    else if constexpr (is_tuple<T>::value) {
+        std::apply([](auto&&... args) {
+            size_t n = 0;
+            ((std::cout << (n++ ? "." : "") << args), ...);
+        }, input_val);
+    }
+
+    std::cout << std::endl;
 }
 
-template<typename T, size_t N>
-class CustomAllocator {
-public:
-    using value_type = T;
-
-    CustomAllocator() : pool(nullptr), used(0) {
-        pool = static_cast<T*>(::operator new(sizeof(T) * N));
-    }
-
-    template<class U>
-    CustomAllocator(const CustomAllocator<U, N>&) noexcept {}
-
-    ~CustomAllocator() {
-        ::operator delete(pool);
-    }
-
-    T* allocate(std::size_t n) {
-        if (used + n > N) {
-            throw std::bad_alloc();
-        }
-
-        T* ptr = pool + used;
-        used += n;
-        return ptr;
-    }
-
-    void deallocate(T*, std::size_t) noexcept {}
-
-    template<class U>
-    struct rebind {
-        using other = CustomAllocator<U, N>;
-    };
-
-private:
-    T* pool;
-    size_t used;
-};
-
-template<typename T, typename Alloc = std::allocator<T>>
-class CustomContainer {
-
-    struct Node {
-        T value;
-        Node* next;
-    };
-
-    using NodeAlloc = typename std::allocator_traits<Alloc>::template rebind_alloc<Node>;
-
-public:
-    CustomContainer() : head(nullptr), tail(nullptr), size_(0) {}
-
-    ~CustomContainer() {
-        Node* current = head;
-
-        while(current) {
-            Node* next = current->next;
-            node_alloc.deallocate(current,1);
-            current = next;
-        }
-    }
-
-    void push_back(const T& value) {
-        Node* node = node_alloc.allocate(1);
-        node->value = value;
-        node->next = nullptr;
-
-        if (!head) {
-            head = tail = node;
-        } else {
-            tail->next = node;
-            tail = node;
-        }
-
-        ++size_;
-    }
-
-    bool empty() const {
-        return size_ == 0;
-    }
-
-    size_t size() const {
-        return size_;
-    }
-
-    class Iterator {
-    public:
-        Iterator(Node* n) : node(n) {}
-
-        T& operator*() {
-            return node->value;
-        }
-
-        Iterator& operator++() {
-            node = node->next;
-            return *this;
-        }
-
-        bool operator!=(const Iterator& other) const {
-            return node != other.node;
-        }
-
-    private:
-        Node* node;
-    };
-
-    Iterator begin() { return Iterator(head); }
-    Iterator end() { return Iterator(nullptr); }
-
-private:
-    Node* head;
-    Node* tail;
-    size_t size_;
-
-    NodeAlloc node_alloc;
-};
-
 int main() {
-
-    //1
-    std::map<int,int> test_stl_map;
-    //2
-    for (int i = 0; i < 10; ++i) {
-        test_stl_map.emplace(i,factorial(i));
-    }
-    //3
-    std::map<int,int, std::less<int>, CustomAllocator<std::pair<const int, int>, 10>> test_custom_map;
-    //4
-    for (int i = 0; i < 10; ++i) {
-        test_custom_map.emplace(i,factorial(i));
-    }
-    //5
-    for (const auto& pair : test_custom_map) {
-        std::cout << pair.first << " " << pair.second << std::endl;
-    }
-    //6
-    CustomContainer<int, std::allocator<int>> test_container_std_alloc;
-    //7
-    for (int i = 0; i < 10; ++i) {
-        test_container_std_alloc.push_back(i);
-    }
-    //8
-    CustomContainer<int, CustomAllocator<int, 10>> test_container_custom_alloc;
-    //9
-    for (int i = 0; i < 10; ++i) {
-        test_container_custom_alloc.push_back(i);
-    }
-    //10
-    for (const auto& value : test_container_custom_alloc) {
-       std::cout << value << " ";
-    }
+    print_ip( int8_t{-1} );                                 // 255 
+    print_ip( int16_t{0} );                                 // 0.0 
+    print_ip( int32_t{2130706433} );                        // 127.0.0.1 
+    print_ip( int64_t{8875824491850138409} );               // 123.45.67.89.101.112.131.41 
+    print_ip( std::string{"Hello, World!"} );              // Hello, World! 
+    print_ip( std::vector<int>{100, 200, 300, 400} );       // 100.200.300.400 
+    print_ip( std::list<short>{400, 300, 200, 100} );       // 400.300.200.100 
+    print_ip( std::make_tuple(123, 456, 789, 0) );          // 123.456.789.0
 
     return 0;
 }
