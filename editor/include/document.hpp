@@ -1,4 +1,6 @@
 #include "common.hpp"
+#include "shapes.hpp"
+#include "observer.hpp"
 
 class Document {
     public:
