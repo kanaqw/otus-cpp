@@ -19,7 +19,9 @@ set_target_properties(ip_filter_cli ip_filter PROPERTIES
 )
 
 target_include_directories(ip_filter
-    PRIVATE "${CMAKE_BINARY_DIR}/ip_filter/include"
+    PRIVATE 
+    "${CMAKE_BINARY_DIR}/ip_filter/include"
+    "${CMAKE_BINARY_DIR}/ip_filter"
 )
 
 target_link_libraries(ip_filter_cli PRIVATE
