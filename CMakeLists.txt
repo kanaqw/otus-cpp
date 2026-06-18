@@ -7,9 +7,9 @@ project(ip_filter VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
 
-add_executable(ip_filter_cli main.cpp)
+add_executable(ip_filter_cli ip_filter/src/main.cpp)
 set(project_srcs
-    ip_filter/ip_filter.cpp
+    ip_filter/src/ip_filter.cpp
     )
 add_library(ip_filter ${project_srcs})
 
