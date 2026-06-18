@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - feature/github_actions
+      - filter_ip_v2
 
 jobs:
   build:
