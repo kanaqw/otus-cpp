@@ -56,7 +56,7 @@ int IpFilter::filter_ip_addresses()
             while (std::getline(std::cin, line)) {
                 std::vector<std::string> v = split(line, '\t');
                 ip_pool.push_back(split(v.at(0), '.'));
-                
+            }
         // TODO reverse lexicographically sort
         for (auto i = ip_pool.begin(); i != ip_pool.end(); ++i) {
             for (auto j = ip_pool.begin(); std::next(j) != ip_pool.end(); ++j) {
