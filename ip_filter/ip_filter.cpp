@@ -52,30 +52,11 @@ int IpFilter::filter_ip_addresses()
     {
         std::vector<std::vector<std::string>> ip_pool;
 
-        if (filepath_.empty()){
-            std::cerr << "filepath is empty, reading from cin " << std::endl;
-
             std::string line;
             while (std::getline(std::cin, line)) {
                 std::vector<std::string> v = split(line, '\t');
                 ip_pool.push_back(split(v.at(0), '.'));
-            }
-        } else {
-            std::string file_path = filepath_;
-            std::ifstream file(filepath_); 
-
-            if (!file.is_open()) {
-                std::cerr << "Error opening file: " << filepath_ << std::endl;
-                return 1;
-            }
-
-            for(std::string line; std::getline(file, line);) {
-                std::vector<std::string> v = split(line, '\t');
-                ip_pool.push_back(split(v.at(0), '.'));
-            }
-        }
-
-
+                
         // TODO reverse lexicographically sort
         for (auto i = ip_pool.begin(); i != ip_pool.end(); ++i) {
             for (auto j = ip_pool.begin(); std::next(j) != ip_pool.end(); ++j) {
