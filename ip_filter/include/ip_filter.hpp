@@ -10,6 +10,7 @@
 
 class IpFilter {
     public:
+        IpFilter(){};
         IpFilter(std::string filepath) : filepath_(filepath){};
         void set_file_path(std::string filepath);
         int filter_ip_addresses();
