@@ -17,7 +17,7 @@ set_target_properties(editor_cli editor PROPERTIES
 add_library(editor INTERFACE)
 
 target_include_directories(editor
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/editor/include"
+    INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/editor/include"
 )
 
 target_link_libraries(editor_cli PRIVATE
