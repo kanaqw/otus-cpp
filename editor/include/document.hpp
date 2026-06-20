@@ -1,3 +1,4 @@
+#pragma once
 #include "common.hpp"
 #include "shapes.hpp"
 #include "observer.hpp"
