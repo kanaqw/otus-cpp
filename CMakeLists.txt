@@ -14,21 +14,21 @@ set_target_properties(editor_cli editor PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 
-add_library(editor INTERFACE)
+add_library(editor_lib INTERFACE)
 
-target_include_directories(editor
+target_include_directories(editor_lib
     INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/editor/include"
 )
 
 target_link_libraries(editor_cli PRIVATE
-    editor
+    editor_lib
 )
 
 if (MSVC)
     target_compile_options(editor_cli PRIVATE
         /W4
     )
-    target_compile_options(editor PRIVATE
+    target_compile_options(editor_lib INTERFACE
         /W4
     )
 
@@ -36,7 +36,7 @@ else ()
     target_compile_options(editor_cli PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
-    target_compile_options(editor PRIVATE
+    target_compile_options(editor_lib INTERFACE
         -Wall -Wextra -pedantic -Werror
     )
 endif()
