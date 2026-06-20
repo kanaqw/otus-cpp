@@ -9,7 +9,7 @@ configure_file(version.h.in version.h)
 
 add_executable(editor_cli editor/src/main.cpp)
 
-set_target_properties(editor_cli editor PROPERTIES
+set_target_properties(editor_cli editor_lib PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
