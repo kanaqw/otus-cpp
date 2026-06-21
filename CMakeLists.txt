@@ -14,7 +14,7 @@ set(project_srcs
 add_library(parser ${project_srcs})
 
 set_target_properties(parser_cli parser PROPERTIES
-    CXX_STANDARD 14
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
 
