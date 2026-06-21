@@ -2,7 +2,7 @@
 namespace parser {
 
 void ConsoleLogger::update(const std::vector<std::string>& block,
-                            time_t time) override {
+                            time_t time) {
      if (!block.empty()){
           std::cout << "Bulk: " ;
           for (auto it = block.begin();const auto& cmd : block){
@@ -16,7 +16,7 @@ void ConsoleLogger::update(const std::vector<std::string>& block,
 };
 
 void FileLogger::update(const std::vector<std::string>& block,
-                            time_t time) override {
+                            time_t time) {
       if (!block.empty()){
           std::string filename = "Bulk" + std::to_string(time) + ".log";
           std::ofstream file(filename);
