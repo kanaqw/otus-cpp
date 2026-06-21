@@ -4,7 +4,7 @@ namespace parser {
 void ConsoleLogger::update(const std::vector<std::string>& block,
                             time_t time) {
      if (!block.empty()){
-          std::cout << "Bulk: " ;
+          std::cout << "Bulk time:" << time << "Bulk: ";
           for (auto it = block.begin();const auto& cmd : block){
               std::cout << cmd;
               if (it!=block.end()){
