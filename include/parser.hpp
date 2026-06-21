@@ -35,10 +35,10 @@ namespace parser {
     class PackHandler {
         public:
         PackHandler(size_t N) 
-        : packSize_(N),
-          currentState_(CmdType::STATIC),
-          brackets_(),
-          timestamp_(0)
+        : currentState_(CmdType::STATIC),
+          packSize_(N),
+          timestamp_(0),
+          brackets_()
           {}
 
         inline void subscribe(std::shared_ptr<IOListener> listener) {
