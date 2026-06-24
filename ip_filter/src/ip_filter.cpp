@@ -112,7 +112,7 @@ int IpFilter::filter_ip_addresses() {
 
         // TODO filter by first and second bytes and output
         // ip = filter(46, 70)
-        auto filter1 = filter_ips( ip_pool, [](const auto& ip){return ip[0] == "46" && ip[1] == "70";});
+        auto filter2 = filter_ips( ip_pool, [](const auto& ip){return ip[0] == "46" && ip[1] == "70";});
         print_ip(filter2);
 
         // 46.70.225.39
@@ -123,7 +123,7 @@ int IpFilter::filter_ip_addresses() {
         // TODO filter by any byte and output
         // ip = filter_any(46)
 
-        auto filter1 = filter_ips( ip_pool, [](const auto& ip){return part == "46";});
+        auto filter3 = filter_ips( ip_pool, [](const auto& ip){return part == "46";});
         print_ip(filter3);
 
         // 186.204.34.46
