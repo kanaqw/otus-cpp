@@ -5,7 +5,11 @@ int main(int argc, char* argv[]) {
     size_t default_size = 3;
     if (argc > 1){
         try {
-            default_size = std::stoul(argv[1]);
+            long long parsed = std::stoul(argv[1]);
+            if (parsed < 0) {
+                throw std::out_of_range("Negative value not allowed");
+            }
+            default_size = static_cast<size_t>(parsed);
         } catch (...) {
             std::cerr << "Invalid argument, using default size - 3\n";
         }
