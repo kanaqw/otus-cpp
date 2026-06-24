@@ -1,8 +1,9 @@
 #include "ip_filter.hpp"
+#include <algorithm>
+#include <iterator>
 
 
-std::vector<std::string> split(const std::string &str, char d)
-{
+std::vector<std::string> split(const std::string &str, char d) {
     std::vector<std::string> r;
 
     auto start = 0;
@@ -46,8 +47,22 @@ void print_ip(std::vector<std::vector<std::string>> ip_pool){
     }
 }
 
-int IpFilter::filter_ip_addresses()
+template<typename Predicate>
+std::vector<std::vector<std::string>> filter_ips(const std::vector<std::vector<std::string>>& ip_pool,
+                                                Predicate pred) 
 {
+    std::vector<std::vector<std::string>> result;
+
+    std::copy_if(
+        ip_pool.begin(),
+        ip_pool.end(),
+        std::back_inserter(result),
+        pred);
+
+    return result;
+}
+
+int IpFilter::filter_ip_addresses() {
     try
     {
         std::vector<std::vector<std::string>> ip_pool;
@@ -61,22 +76,18 @@ int IpFilter::filter_ip_addresses()
                 ip_pool.push_back(split(v.at(0), '.'));
             }
         // TODO reverse lexicographically sort
-        for (auto i = ip_pool.begin(); i != ip_pool.end(); ++i) {
-            for (auto j = ip_pool.begin(); std::next(j) != ip_pool.end(); ++j) {
-                auto next_it = std::next(j);
-                
-                bool less = false;
-                for(size_t k = 0; k < 4; ++k) {
-                    int left = std::stoi((*j)[k]);
-                    int right = std::stoi((*next_it)[k]);
-                    if (left < right) { less = true; break; }
-                    if (left > right) { break; }
+        std::sort(ip_pool.begin(), ip_pool.end(),[](const auto& lhs, const auto& rhs) {
+                for (size_t i = 0; i < 4; ++i)
+                {
+                    int left = std::stoi(lhs[i]);
+                    int right = std::stoi(rhs[i]);
+
+                    if (left != right)
+                        return left > right; 
                 }
 
-                if (less) std::swap(*j, *next_it);
-            }
-        }
-
+                return false;
+            });
         print_ip(ip_pool);
 
         // 222.173.235.246
@@ -90,10 +101,7 @@ int IpFilter::filter_ip_addresses()
         // TODO filter by first byte and output
         // ip = filter(1)
 
-        std::vector<std::vector<std::string>> filter1;
-        for(const auto& ip : ip_pool) {
-            if (ip[0] == "1") filter1.push_back(ip);
-        }
+        auto filter1 = filter_ips( ip_pool, [](const auto& ip){return ip[0] == "1";});
         print_ip(filter1);
 
         // 1.231.69.33
@@ -104,10 +112,7 @@ int IpFilter::filter_ip_addresses()
 
         // TODO filter by first and second bytes and output
         // ip = filter(46, 70)
-        std::vector<std::vector<std::string>> filter2;
-        for(const auto& ip : ip_pool) {
-            if (ip[0] == "46" && ip[1] == "70") filter2.push_back(ip);
-        }
+        auto filter1 = filter_ips( ip_pool, [](const auto& ip){return ip[0] == "46" && ip[1] == "70";});
         print_ip(filter2);
 
         // 46.70.225.39
@@ -118,14 +123,7 @@ int IpFilter::filter_ip_addresses()
         // TODO filter by any byte and output
         // ip = filter_any(46)
 
-        std::vector<std::vector<std::string>> filter3;
-        for(const auto& ip : ip_pool) {
-            bool found = false;
-            for(const auto& part : ip) {
-                if (part == "46") { found = true; break; }
-            }
-            if (found) filter3.push_back(ip);
-        }
+        auto filter1 = filter_ips( ip_pool, [](const auto& ip){return part == "46";});
         print_ip(filter3);
 
         // 186.204.34.46
