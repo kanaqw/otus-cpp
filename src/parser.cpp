@@ -2,9 +2,8 @@
 namespace parser {
 
 void ConsoleLogger::update(const std::vector<std::string>& block,
-                            time_t time) {
+                            [[maybe_unused]] time_t time) {
      if (!block.empty()){
-          time = 0;
           std::cout << "Bulk: ";
           for (auto it = block.begin();const auto& cmd : block){
               std::cout << cmd;
