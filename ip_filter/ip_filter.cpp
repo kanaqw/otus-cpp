@@ -57,6 +57,9 @@ int IpFilter::filter_ip_addresses()
 
             std::string line;
             while (std::getline(std::cin, line)) {
+                if (line.empty()) {
+                    break;
+                }
                 std::vector<std::string> v = split(line, '\t');
                 ip_pool.push_back(split(v.at(0), '.'));
             }
