@@ -31,8 +31,10 @@ enable_testing()
 include(FetchContent)
 FetchContent_Declare(
   googletest
-  URL https://github.com
+  GIT_REPOSITORY https://github.com
+  GIT_TAG        v1.15.2 
 )
+
 FetchContent_MakeAvailable(googletest)
 
 add_executable(parser_tests test/test_main.cpp)
