@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "include/parser.hpp"
+#include "parser.hpp"
 #include <iostream>
 #include <string>
 
