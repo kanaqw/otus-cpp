@@ -26,6 +26,26 @@ target_link_libraries(parser_cli PRIVATE
     parser
 )
 
+enable_testing()
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com
+)
+FetchContent_MakeAvailable(googletest)
+
+add_executable(parser_tests test/test_main.cpp)
+
+target_link_libraries(parser_tests PRIVATE 
+    parser_lib 
+    gtest 
+    gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(parser_tests)
+
 if (MSVC)
     target_compile_options(parser_cli PRIVATE
         /W4
