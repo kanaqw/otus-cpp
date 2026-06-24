@@ -123,7 +123,11 @@ int IpFilter::filter_ip_addresses() {
         // TODO filter by any byte and output
         // ip = filter_any(46)
 
-        auto filter3 = filter_ips( ip_pool, [](const auto& ip){return part == "46";});
+        auto filter3 = filter_ips( ip_pool, [](const auto& ip){return std::any_of(
+                                                                        ip.begin(),
+                                                                        ip.end(),
+                                                                        [](const auto& part)
+                                                                        { return part == "46";});});
         print_ip(filter3);
 
         // 186.204.34.46
