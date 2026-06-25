@@ -24,7 +24,7 @@ namespace parser {
         void SetUp() override {
             handler = std::make_unique<PackHandler>(default_pack_size);
             spy_listener = std::make_shared<TestListener>();
-            handler->registerListener(spy_listener); 
+            handler->subscrube(spy_listener); 
         }
     
        
