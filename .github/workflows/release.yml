@@ -19,7 +19,7 @@ jobs:
       - run: cmake --build .
       - run: cmake --build . --target package
       - name: Run testы
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir . --output-on-failure
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
