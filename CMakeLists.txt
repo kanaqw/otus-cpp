@@ -41,7 +41,7 @@ add_executable(parser_tests test/test_main.cpp)
 target_include_directories(parser_tests PRIVATE include)
 
 target_link_libraries(parser_tests PRIVATE 
-    parser_lib 
+    parser 
     gtest 
     gtest_main
 )
