@@ -4,9 +4,8 @@
 #include <string>
 
 namespace parser {
-  namespace test {
 
-    class TestListener : public IListener { 
+    class TestListener : public IOListener { 
     public:
         std::vector<std::vector<std::string>> received_blocks;
         
@@ -66,7 +65,7 @@ namespace parser {
         EXPECT_EQ(spy_listener->received_blocks[0], std::vector<std::string>({"cmd1"}));
     }
 
-  }
+  
 }
 
 
