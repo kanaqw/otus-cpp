@@ -106,4 +106,3 @@ std::string FileSignatureManager::get_block_hash(size_t block_idx) {
             return hash;
 }
 
- const fs::path& FileSignatureManager::get_path() const { return path_; }
