@@ -7,6 +7,8 @@ project(boost VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
 
+find_package(Boost REQUIRED COMPONENTS program_options filesystem)
+
 add_executable(boost_cli main.cpp)
 set(project_srcs
     lib/src/file_manager.cpp
@@ -24,6 +26,8 @@ target_include_directories(boost
 
 target_link_libraries(boost_cli PRIVATE
     boost
+    Boost::program_options
+    Boost::filesystem
 )
 
 if (MSVC)
