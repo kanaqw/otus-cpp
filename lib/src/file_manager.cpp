@@ -1,4 +1,4 @@
-#include "lib/include/file_manager.hpp"
+#include "file_manager.hpp"
 
 std::string calculate_hash(const std::vector<char>& block, HashType type) {
     if (type == HashType::CRC32) {
