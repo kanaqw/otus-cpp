@@ -14,7 +14,7 @@ set(project_srcs
 add_library(boost ${project_srcs})
 
 set_target_properties(boost_cli boost PROPERTIES
-    CXX_STANDARD 14
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
 
