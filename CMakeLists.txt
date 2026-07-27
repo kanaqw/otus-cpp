@@ -7,6 +7,10 @@ project(boost VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
 
+if (POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS program_options filesystem)
 
 add_executable(boost_cli main.cpp)
