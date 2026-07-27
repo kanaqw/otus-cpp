@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
                     for (auto& [current_hash, split_files] : split_bucket) {
                         if (current_hash.empty()) {
                             if (split_files.size() > 1) {
-                                std::setstd::string output_group;
+                                std::set<std::string> output_group;
                                 for (const auto& f : split_files) {
                                     output_group.insert(f->get_path().string());
                                 }
