@@ -1,7 +1,5 @@
 #include "lib/include/file_manager.hpp"
 
-namespace fs = boost::filesystem;
-
 std::string calculate_hash(const std::vector<char>& block, HashType type) {
     if (type == HashType::CRC32) {
         boost::crc_32_type result;
@@ -78,49 +76,34 @@ void scan_directory(const fs::path& current_path, int current_level, const Confi
         }
     }
 }
-
-class FileSignatureManager {
-public:
-    FileSignatureManager(fs::path path, size_t block_size, HashType hash_type)
-        : path_(std::move(path)), block_size_(block_size), hash_type_(hash_type), stream_(path_, std::ios::binary) {}
-
-    std::string get_block_hash(size_t block_idx) {
-        if (block_idx < cached_hashes_.size()) {
-            return cached_hashes_[block_idx];
-        }
-
-        if (!stream_ || is_eof_) {
-            return "";
-        }
-
-        std::vector<char> buffer(block_size_);
-        stream_.seekg(block_idx * block_size_, std::ios::beg);
-        stream_.read(buffer.data(), block_size_);
-        
-        size_t read_bytes = stream_.gcount();
-        if (read_bytes == 0) {
-            is_eof_ = true;
-            return "";
-        }
-        buffer.resize(read_bytes);
-
-        if (read_bytes < block_size_) {
-            buffer.insert(buffer.end(), block_size_ - read_bytes, 0);
-            is_eof_ = true;
-        }
-
-        std::string hash = calculate_hash(buffer, hash_type_);
-        cached_hashes_.push_back(hash);
-        return hash;
+std::string FileSignatureManager::get_block_hash(size_t block_idx) {
+    if (block_idx < cached_hashes_.size()) {
+        return cached_hashes_[block_idx];
     }
 
-    const fs::path& get_path() const { return path_; }
+    if (!stream_ || is_eof_) {
+        return "";
+    }
 
-private:
-    fs::path path_;
-    size_t block_size_;
-    HashType hash_type_;
-    std::ifstream stream_;
-    std::vector<std::string> cached_hashes_;
-    bool is_eof_ = false;
-};
+    std::vector<char> buffer(block_size_);
+    stream_.seekg(block_idx * block_size_, std::ios::beg);
+    stream_.read(buffer.data(), block_size_);
+    
+    size_t read_bytes = stream_.gcount();
+    if (read_bytes == 0) {
+        is_eof_ = true;
+        return "";
+    }
+    buffer.resize(read_bytes);
+
+    if (read_bytes < block_size_) {
+        buffer.insert(buffer.end(), block_size_ - read_bytes, 0);
+        is_eof_ = true;
+    }
+
+    std::string hash = calculate_hash(buffer, hash_type_);
+            cached_hashes_.push_back(hash);
+            return hash;
+}
+
+ const fs::path& FileSignatureManager::get_path() const { return path_; }
