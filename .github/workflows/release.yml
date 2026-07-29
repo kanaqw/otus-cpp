@@ -6,6 +6,7 @@ on:
       - master
       - parser_p1
       - feature/github_actions
+      - parser_async
 
 jobs:
   build:
