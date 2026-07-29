@@ -12,6 +12,7 @@ set(project_srcs
     src/parser.cpp
     )
 add_library(parser ${project_srcs})
+set_target_properties(parser PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(async SHARED src/async.cpp)
 
