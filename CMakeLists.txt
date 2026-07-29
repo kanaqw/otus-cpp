@@ -7,23 +7,39 @@ project(parser VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
 
-add_executable(parser_cli main.cpp)
 set(project_srcs
     src/parser.cpp
     )
 add_library(parser ${project_srcs})
 
-set_target_properties(parser_cli parser PROPERTIES
+add_library(async SHARED src/async.cpp)
+
+add_executable(async_cli main.cpp)
+
+set_target_properties(async_cli async parser PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
+)
+
+set_target_properties(async PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
 target_include_directories(parser
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-target_link_libraries(parser_cli PRIVATE
+target_include_directories(async
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(async PRIVATE
     parser
+)
+
+target_link_libraries(async_cli PRIVATE
+    async
 )
 
 enable_testing()
@@ -32,7 +48,7 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.15.2 
+  GIT_TAG        v1.15.2
 )
 
 FetchContent_MakeAvailable(googletest)
@@ -40,17 +56,25 @@ FetchContent_MakeAvailable(googletest)
 add_executable(parser_tests test/test_main.cpp)
 target_include_directories(parser_tests PRIVATE include)
 
-target_link_libraries(parser_tests PRIVATE 
-    parser 
-    gtest 
+target_link_libraries(parser_tests PRIVATE
+    parser
+    gtest
     gtest_main
+)
+
+set_target_properties(parser_tests PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
 )
 
 include(GoogleTest)
 gtest_discover_tests(parser_tests)
 
 if (MSVC)
-    target_compile_options(parser_cli PRIVATE
+    target_compile_options(async_cli PRIVATE
+        /W4
+    )
+    target_compile_options(async PRIVATE
         /W4
     )
     target_compile_options(parser PRIVATE
@@ -58,7 +82,10 @@ if (MSVC)
     )
 
 else ()
-    target_compile_options(parser_cli PRIVATE
+    target_compile_options(async_cli PRIVATE
+        -Wall -Wextra -pedantic -Werror
+    )
+    target_compile_options(async PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
     target_compile_options(parser PRIVATE
@@ -66,12 +93,20 @@ else ()
     )
 endif()
 
-install(TARGETS parser_cli RUNTIME DESTINATION bin)
+install(TARGETS async async_cli
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
+install(FILES include/async.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+set(CPACK_PACKAGE_NAME "async")
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_PACKAGE_CONTACT example@example.com)
+set(CPACK_DEBIAN_PACKAGE_NAME "async")
 include(CPack)
-
