@@ -6,12 +6,22 @@
 #include <memory>
 #include <stack>
 
+#include <atomic>
+#include <thread>
+
+#include "safe_queue.hpp"
+
 enum class CmdType : size_t {
-    STATIC = 0, 
+    STATIC = 0,
     DYNAMIC
 };
 
 namespace parser {
+
+    struct Bulk {
+        std::vector<std::string> commands;
+        time_t time;
+    };
 
     class IOListener {
         public:
@@ -22,14 +32,35 @@ namespace parser {
 
     class ConsoleLogger : public IOListener {
         public:
+        ConsoleLogger();
+        ~ConsoleLogger() override;
+
         void update(const std::vector<std::string>& block,
                             time_t time) override;
+
+        private:
+            void worker_loop();
+
+            SafeQueue<Bulk> queue_;
+            std::thread thread_;
     };
 
     class FileLogger : public IOListener {
         public:
+        FileLogger();
+        ~FileLogger() override;
+
         void update(const std::vector<std::string>& block,
-                            time_t time) override ;
+                            time_t time) override;
+
+        private:
+            void worker_loop(SafeQueue<Bulk>& queue);
+
+            SafeQueue<Bulk> queue1_;
+            SafeQueue<Bulk> queue2_;
+            std::atomic<size_t> counter_{0};
+            std::thread file_1_;
+            std::thread file_2_;
     };
 
     class PackHandler {
