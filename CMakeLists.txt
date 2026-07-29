@@ -6,6 +6,7 @@ set(PROJECT_VERSION 0.0.${PATCH_VERSION})
 project(parser VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
+include(GNUInstallDirs)
 
 set(project_srcs
     src/parser.cpp
