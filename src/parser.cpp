@@ -84,6 +84,41 @@ FileLogger& file_logger() {
     return instance;
 }
 
+void StaticBulkAggregator::register_session() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    ++active_sessions_;
+}
+
+void StaticBulkAggregator::unregister_session() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (--active_sessions_ == 0 && !commands_.empty()) {
+        notify();
+    }
+}
+
+void StaticBulkAggregator::add(const std::string& cmd) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (commands_.empty()) {
+        timestamp_ = std::time(nullptr);
+    }
+    commands_.push_back(cmd);
+    if (commands_.size() == packSize_) {
+        notify();
+    }
+}
+
+void StaticBulkAggregator::notify() {
+    for (auto& listener : listeners_) {
+        listener->update(commands_, timestamp_);
+    }
+    commands_.clear();
+}
+
+StaticBulkAggregator& static_aggregator(size_t bulk) {
+    static StaticBulkAggregator instance(bulk);
+    return instance;
+}
+
 void PackHandler::add_cmd_to_pack(const std::string& cmd){
    if (cmd == "{") {
           handle_open_bracket();
@@ -95,14 +130,17 @@ void PackHandler::add_cmd_to_pack(const std::string& cmd){
 }
 
 void PackHandler::flush_eof() {
-      if (currentState_ == CmdType::STATIC && !commands_.empty()){
+      // Aggregator mode: the shared static pool outlives this connection -
+      // other sessions may still complete it - so it flushes only once the
+      // aggregator's last session disconnects (see unregister_session()).
+      if (currentState_ == CmdType::STATIC && !aggregator_ && !commands_.empty()){
           notify();
       }
       commands_.clear();
   }
 void PackHandler::handle_open_bracket() {
       if (currentState_ == CmdType::STATIC) {
-          if (!commands_.empty()) {
+          if (!aggregator_ && !commands_.empty()) {
               notify();
           }
           currentState_ = CmdType::DYNAMIC;
@@ -123,6 +161,10 @@ void PackHandler::handle_close_bracket(){
   }
 
 void PackHandler::handle_regular_cmd(const std::string& cmd){
+      if (currentState_ == CmdType::STATIC && aggregator_) {
+          aggregator_->add(cmd);
+          return;
+      }
       if (commands_.empty()){
           timestamp_ = std::time(nullptr);
       }
