@@ -7,6 +7,7 @@
 #include <stack>
 
 #include <atomic>
+#include <mutex>
 #include <thread>
 
 #include "safe_queue.hpp"
@@ -67,13 +68,52 @@ namespace parser {
     ConsoleLogger& console_logger();
     FileLogger& file_logger();
 
+    // Shared across every connection using the same bulk size
+    class StaticBulkAggregator {
+        public:
+        explicit StaticBulkAggregator(size_t N) : packSize_(N) {}
+
+        void subscribe(IOListener* listener) {
+            listeners_.push_back(listener);
+        }
+
+        void register_session();
+        void unregister_session();
+        void add(const std::string& cmd);
+
+        private:
+            void notify();
+
+            std::mutex mutex_;
+            std::vector<std::string> commands_;
+            std::vector<IOListener*> listeners_;
+            size_t packSize_;
+            time_t timestamp_{};
+            size_t active_sessions_{0};
+    };
+
+    StaticBulkAggregator& static_aggregator(size_t bulk);
+
     class PackHandler {
         public:
-        PackHandler(size_t N) 
+        // Self-contained mode: static blocks accumulate and flush locally.
+        // Used by tests and by the single-connection CLI.
+        PackHandler(size_t N)
         : currentState_(CmdType::STATIC),
           packSize_(N),
           timestamp_(0),
           brackets_()
+          {}
+
+        // Delegated mode: static commands are forwarded to a shared
+        // aggregator so they can mix with other connections' static
+        // commands. Dynamic (bracketed) blocks stay local, as before.
+        PackHandler(size_t N, StaticBulkAggregator& aggregator)
+        : currentState_(CmdType::STATIC),
+          packSize_(N),
+          timestamp_(0),
+          brackets_(),
+          aggregator_(&aggregator)
           {}
 
         inline void subscribe(IOListener* listener) {
@@ -94,6 +134,7 @@ namespace parser {
             size_t packSize_;
             time_t timestamp_;
             std::stack<char> brackets_;
+            StaticBulkAggregator* aggregator_{nullptr};
     };
 
 } //namespace parser
