@@ -1,7 +1,6 @@
 #include "async.h"
 #include "parser.hpp"
 
-#include <memory>
 #include <mutex>
 #include <string>
 
@@ -13,8 +12,8 @@ class Session {
     public:
         explicit Session(std::size_t bulk_size)
             : handler_(bulk_size) {
-            handler_.subscribe(std::make_shared<parser::ConsoleLogger>());
-            handler_.subscribe(std::make_shared<parser::FileLogger>());
+            handler_.subscribe(&parser::console_logger());
+            handler_.subscribe(&parser::file_logger());
         }
 
         void receive(const char* data, std::size_t size) {
