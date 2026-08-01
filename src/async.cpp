@@ -10,8 +10,8 @@ namespace {
 
 class Session {
     public:
-        explicit Session(std::size_t bulk_size)
-            : handler_(bulk_size) {
+        Session(std::size_t bulk_size, parser::StaticBulkAggregator& aggregator)
+            : handler_(bulk_size, aggregator), aggregator_(aggregator) {
             handler_.subscribe(&parser::console_logger());
             handler_.subscribe(&parser::file_logger());
         }
@@ -41,10 +41,12 @@ class Session {
                 buffer_.clear();
             }
             handler_.flush_eof();
+            aggregator_.unregister_session();
         }
 
     private:
         parser::PackHandler handler_;
+        parser::StaticBulkAggregator& aggregator_;
         std::string buffer_;
         std::mutex mutex_;
 };
@@ -52,7 +54,14 @@ class Session {
 } // namespace
 
 handle_t connect(std::size_t bulk) {
-    return new Session(bulk);
+    static std::once_flag aggregator_setup;
+    auto& aggregator = parser::static_aggregator(bulk);
+    std::call_once(aggregator_setup, [&aggregator] {
+        aggregator.subscribe(&parser::console_logger());
+        aggregator.subscribe(&parser::file_logger());
+    });
+    aggregator.register_session();
+    return new Session(bulk, aggregator);
 }
 
 void receive(handle_t handle, const char* data, std::size_t size) {
