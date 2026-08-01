@@ -23,7 +23,7 @@ namespace parser {
         void SetUp() override {
             handler = std::make_unique<PackHandler>(default_pack_size);
             spy_listener = std::make_shared<TestListener>();
-            handler->subscribe(spy_listener); 
+            handler->subscribe(spy_listener.get());
         }
     
        
@@ -67,6 +67,8 @@ namespace parser {
 
   
 }
+
+
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
