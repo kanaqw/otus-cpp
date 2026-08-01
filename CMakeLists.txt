@@ -6,6 +6,7 @@ set(PROJECT_VERSION 0.0.${PATCH_VERSION})
 project(parser VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
+
 include(GNUInstallDirs)
 
 set(project_srcs
@@ -18,7 +19,22 @@ add_library(async SHARED src/async.cpp)
 
 add_executable(async_cli main.cpp)
 
-set_target_properties(async_cli async parser PROPERTIES
+find_package(Boost REQUIRED)
+find_package(Threads REQUIRED)
+
+add_executable(bulk_server bulk_server_main.cpp src/server.cpp)
+
+target_include_directories(bulk_server PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(bulk_server PRIVATE
+    async
+    Boost::headers
+    Threads::Threads
+)
+
+set_target_properties(async_cli async parser bulk_server PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
@@ -35,7 +51,7 @@ target_include_directories(parser
 target_include_directories(async
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
-
+    
 target_link_libraries(async PRIVATE
     parser
 )
@@ -82,6 +98,9 @@ if (MSVC)
     target_compile_options(parser PRIVATE
         /W4
     )
+    target_compile_options(bulk_server PRIVATE
+        /W4
+    )
 
 else ()
     target_compile_options(async_cli PRIVATE
@@ -93,15 +112,25 @@ else ()
     target_compile_options(parser PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
+    target_compile_options(bulk_server PRIVATE
+        -Wall -Wextra -pedantic -Werror
+    )
 endif()
 
 install(TARGETS async async_cli
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    COMPONENT async
 )
 
 install(FILES include/async.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT async
+)
+
+install(TARGETS bulk_server
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    COMPONENT bulk_server
 )
 
 set(CPACK_PACKAGE_NAME "async")
@@ -110,5 +139,10 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_PACKAGE_CONTACT example@example.com)
-set(CPACK_DEBIAN_PACKAGE_NAME "async")
+
+set(CPACK_DEB_COMPONENT_INSTALL YES)
+set(CPACK_COMPONENTS_ALL async bulk_server)
+set(CPACK_DEBIAN_ASYNC_PACKAGE_NAME "async")
+set(CPACK_DEBIAN_BULK_SERVER_PACKAGE_NAME "bulk_server")
+
 include(CPack)
