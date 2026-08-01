@@ -2,10 +2,6 @@
 
 namespace parser {
 
-namespace {
-    std::atomic<size_t> g_file_seq{0};
-}
-
 ConsoleLogger::ConsoleLogger()
     : thread_(&ConsoleLogger::worker_loop, this) {}
 
@@ -38,12 +34,11 @@ void ConsoleLogger::worker_loop() {
 }
 
 FileLogger::FileLogger()
-    : file_1_(&FileLogger::worker_loop, this, std::ref(queue1_)),
-      file_2_(&FileLogger::worker_loop, this, std::ref(queue2_)) {}
+    : file_1_(&FileLogger::worker_loop, this),
+      file_2_(&FileLogger::worker_loop, this) {}
 
 FileLogger::~FileLogger() {
-    queue1_.stop();
-    queue2_.stop();
+    queue_.stop();
     if (file_1_.joinable()) {
         file_1_.join();
     }
@@ -54,16 +49,15 @@ FileLogger::~FileLogger() {
 
 void FileLogger::update(const std::vector<std::string>& block,
                             time_t time) {
-    size_t idx = counter_.fetch_add(1, std::memory_order_relaxed) % 2;
-    (idx == 0 ? queue1_ : queue2_).push(Bulk{block, time});
+    queue_.push(Bulk{block, time});
 }
 
-void FileLogger::worker_loop(SafeQueue<Bulk>& queue) {
-    while (auto bulk = queue.pop()) {
+void FileLogger::worker_loop() {
+    while (auto bulk = queue_.pop()) {
         if (bulk->commands.empty()) {
             continue;
         }
-        size_t seq = g_file_seq.fetch_add(1, std::memory_order_relaxed);
+        size_t seq = file_seq_.fetch_add(1, std::memory_order_relaxed);
         std::string filename = "Bulk" + std::to_string(bulk->time) + "_" + std::to_string(seq) + ".log";
         std::ofstream file(filename);
 
@@ -78,6 +72,16 @@ void FileLogger::worker_loop(SafeQueue<Bulk>& queue) {
             file << "\n";
         }
     }
+}
+
+ConsoleLogger& console_logger() {
+    static ConsoleLogger instance;
+    return instance;
+}
+
+FileLogger& file_logger() {
+    static FileLogger instance;
+    return instance;
 }
 
 void PackHandler::add_cmd_to_pack(const std::string& cmd){
