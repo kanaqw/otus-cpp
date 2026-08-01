@@ -54,14 +54,18 @@ namespace parser {
                             time_t time) override;
 
         private:
-            void worker_loop(SafeQueue<Bulk>& queue);
+            void worker_loop();
 
-            SafeQueue<Bulk> queue1_;
-            SafeQueue<Bulk> queue2_;
-            std::atomic<size_t> counter_{0};
+            SafeQueue<Bulk> queue_;
+            std::atomic<size_t> file_seq_{0};
             std::thread file_1_;
             std::thread file_2_;
     };
+
+    // Process-wide singletons: shared across every connect() context so only
+    // three background threads ever exist, not three per context.
+    ConsoleLogger& console_logger();
+    FileLogger& file_logger();
 
     class PackHandler {
         public:
@@ -72,7 +76,7 @@ namespace parser {
           brackets_()
           {}
 
-        inline void subscribe(std::shared_ptr<IOListener> listener) {
+        inline void subscribe(IOListener* listener) {
             listeners_.push_back(listener);
         }
         void add_cmd_to_pack(const std::string& cmd);
@@ -82,10 +86,10 @@ namespace parser {
             void handle_open_bracket();
             void handle_close_bracket();
             void handle_regular_cmd(const std::string& cmd);
-            void notify(); 
+            void notify();
 
             std::vector<std::string> commands_;
-            std::vector<std::shared_ptr<IOListener>> listeners_;
+            std::vector<IOListener*> listeners_;
             CmdType currentState_{};
             size_t packSize_;
             time_t timestamp_;
