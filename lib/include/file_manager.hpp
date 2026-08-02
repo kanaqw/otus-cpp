@@ -38,7 +38,7 @@ void scan_directory(const fs::path& current_path, int current_level, const Confi
 class FileSignatureManager{
 public:
     FileSignatureManager(fs::path path, size_t block_size, HashType hash_type)
-        : path_(std::move(path)), block_size_(block_size), hash_type_(hash_type), stream_(path_, std::ios::binary) {}
+        : path_(std::move(path)), block_size_(block_size), hash_type_(hash_type) {}
     std::string get_block_hash(size_t block_idx);
     const fs::path& get_path() const { return path_; };
 
@@ -46,7 +46,6 @@ private:
     fs::path path_;
     size_t block_size_;
     HashType hash_type_;
-    std::ifstream stream_;
     std::vector<std::string> cached_hashes_;
     bool is_eof_ = false;
 };
