@@ -10,7 +10,7 @@ endif()
 
 find_package(SQLite3 REQUIRED)
 
-add_executable(join_server src/main.cpp src/database.cpp)
+add_executable(join_server main.cpp src/database.cpp)
 target_link_libraries(join_server PRIVATE SQLite3::SQLite3)
 target_compile_options(join_server PRIVATE -Wall -Wextra)
 
