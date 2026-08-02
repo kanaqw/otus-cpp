@@ -1,34 +1,20 @@
+#include <cstdlib>
 #include <iostream>
-#include "include/parser.hpp"
 
-int main(int argc, char* argv[]) {
-    size_t default_size = 3;
-    if (argc > 1){
-        try {
-            int parsed = std::stoi(argv[1]);
-            if (parsed < 0) {
-                throw std::out_of_range("Negative value not allowed");
-            }
-            default_size = static_cast<size_t>(parsed);
-        } catch (...) {
-            std::cerr << "Invalid argument, using default size - 3\n";
-        }
+#include "database.h"
+
+int main(int argc, char** argv) {
+    if (argc != 2) {
+        std::cerr << "usage: join_server <port>\n";
+        return 1;
     }
 
-    parser::PackHandler handler(default_size);
-    auto console_logger = std::make_shared<parser::ConsoleLogger>();
-    auto file_logger = std::make_shared<parser::FileLogger>();
-
-    handler.subscribe(console_logger);
-    handler.subscribe(file_logger);
-
-    std::string line;
-    while (std::getline(std::cin, line)) {
-        if (line.empty()) continue;
-        handler.add_cmd_to_pack(line);
+    int port = std::atoi(argv[1]);
+    if (port <= 0 || port > 65535) {
+        std::cerr << "invalid port: " << argv[1] << "\n";
+        return 1;
     }
 
-    handler.flush_eof();
-
+    runServer(port);
     return 0;
 }
