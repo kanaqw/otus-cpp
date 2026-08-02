@@ -59,20 +59,43 @@ void scan_directory(const fs::path& current_path, int current_level, const Confi
 
     if (!fs::exists(current_path) || !fs::is_directory(current_path)) return;
 
-    for (const auto& entry : fs::directory_iterator(current_path)) {
-        if (fs::is_directory(entry.status())) {
+    boost::system::error_code ec;
+    fs::directory_iterator it(current_path, ec);
+    if (ec) {
+        std::cerr << "Warning: cannot read directory " << current_path << ": " << ec.message() << "\n";
+        return;
+    }
+    const fs::directory_iterator end;
+
+    for (; it != end; it.increment(ec)) {
+        if (ec) {
+            std::cerr << "Warning: error while scanning directory " << current_path << ": " << ec.message() << "\n";
+            break;
+        }
+
+        fs::file_status status = it->status(ec);
+        if (ec) {
+            std::cerr << "Warning: cannot access " << it->path() << ": " << ec.message() << "\n";
+            continue;
+        }
+
+        if (fs::is_directory(status)) {
             if (current_level < config.level) {
-                scan_directory(entry.path(), current_level + 1, config, regex_masks, files_by_size);
+                scan_directory(it->path(), current_level + 1, config, regex_masks, files_by_size);
             }
-        } 
-        else if (fs::is_regular_file(entry.status())) {
-            uintmax_t size = fs::file_size(entry.path());
-        
+        }
+        else if (fs::is_regular_file(status)) {
+            uintmax_t size = fs::file_size(it->path(), ec);
+            if (ec) {
+                std::cerr << "Warning: cannot get size of " << it->path() << ": " << ec.message() << "\n";
+                continue;
+            }
+
             if (size < config.min_file_size) continue;
 
-            if (!match_masks(entry.path().filename().string(), regex_masks)) continue;
+            if (!match_masks(it->path().filename().string(), regex_masks)) continue;
 
-            files_by_size[size].push_back(entry.path());
+            files_by_size[size].push_back(it->path());
         }
     }
 }
@@ -81,15 +104,23 @@ std::string FileSignatureManager::get_block_hash(size_t block_idx) {
         return cached_hashes_[block_idx];
     }
 
-    if (!stream_ || is_eof_) {
+    if (is_eof_) {
+        return "";
+    }
+
+    // Open the file only for the duration of this read instead of holding a
+    // descriptor for the manager's whole lifetime
+    std::ifstream stream(path_.string(), std::ios::binary);
+    if (!stream) {
+        is_eof_ = true;
         return "";
     }
 
     std::vector<char> buffer(block_size_);
-    stream_.seekg(block_idx * block_size_, std::ios::beg);
-    stream_.read(buffer.data(), block_size_);
-    
-    size_t read_bytes = stream_.gcount();
+    stream.seekg(block_idx * block_size_, std::ios::beg);
+    stream.read(buffer.data(), block_size_);
+
+    size_t read_bytes = stream.gcount();
     if (read_bytes == 0) {
         is_eof_ = true;
         return "";
