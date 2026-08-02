@@ -1,72 +1,31 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.14) 
+project(join_server CXX)
 
-set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
-set(PROJECT_VERSION 0.0.${PATCH_VERSION})
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(parser VERSION ${PROJECT_VERSION})
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
-configure_file(version.h.in version.h)
+find_package(SQLite3 REQUIRED)
 
-add_executable(parser_cli main.cpp)
-set(project_srcs
-    src/parser.cpp
-    )
-add_library(parser ${project_srcs})
-
-set_target_properties(parser_cli parser PROPERTIES
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED ON
-)
-
-target_include_directories(parser
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-target_link_libraries(parser_cli PRIVATE
-    parser
-)
-
-enable_testing()
-
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.15.2 
-)
-
-FetchContent_MakeAvailable(googletest)
-
-add_executable(parser_tests test/test_main.cpp)
-target_include_directories(parser_tests PRIVATE include)
-
-target_link_libraries(parser_tests PRIVATE 
-    parser 
-    gtest 
-    gtest_main
-)
-
-include(GoogleTest)
-gtest_discover_tests(parser_tests)
+add_executable(join_server src/main.cpp src/database.cpp)
+target_link_libraries(join_server PRIVATE SQLite3::SQLite3)
+target_compile_options(join_server PRIVATE -Wall -Wextra)
 
 if (MSVC)
-    target_compile_options(parser_cli PRIVATE
-        /W4
-    )
-    target_compile_options(parser PRIVATE
+    target_compile_options(join_server PRIVATE
         /W4
     )
 
 else ()
-    target_compile_options(parser_cli PRIVATE
-        -Wall -Wextra -pedantic -Werror
-    )
-    target_compile_options(parser PRIVATE
+    target_compile_options(join_server PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
 endif()
 
-install(TARGETS parser_cli RUNTIME DESTINATION bin)
+install(TARGETS join_server RUNTIME DESTINATION bin)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
