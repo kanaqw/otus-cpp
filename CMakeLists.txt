@@ -11,7 +11,8 @@ endif()
 find_package(SQLite3 REQUIRED)
 
 add_executable(join_server main.cpp src/database.cpp)
-target_link_libraries(join_server PRIVATE SQLite3::SQLite3)
+target_include_directories(join_server PRIVATE ${SQLite3_INCLUDE_DIRS})
+target_link_libraries(join_server PRIVATE ${SQLite3_LIBRARIES})
 target_compile_options(join_server PRIVATE -Wall -Wextra)
 
 if (MSVC)
