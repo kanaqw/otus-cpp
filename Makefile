@@ -16,7 +16,7 @@ bin/reducer_variance: reducer_variance.cpp
 	mkdir -p bin
 	g++ $(CXXFLAGS) -o $@ reducer_variance.cpp
 
-bin/test_common: test_common.cpp common.hpp
+bin/test_common: test/test_common.cpp common.hpp
 	mkdir -p bin
 	g++ $(CXXFLAGS) -o $@ test_common.cpp
 
