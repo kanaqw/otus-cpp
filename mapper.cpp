@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "common.hpp"
+#include "include/common.hpp"
 
 int main() {
     std::string line;
