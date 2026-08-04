@@ -4,7 +4,7 @@ CXXFLAGS = -std=c++17 -O2 -Wall
 
 all: bin/mapper bin/reducer_mean bin/reducer_variance
 
-bin/mapper: mapper.cpp common.hpp
+bin/mapper: mapper.cpp include/common.hpp
 	mkdir -p bin
 	g++ $(CXXFLAGS) -o $@ mapper.cpp
 
@@ -16,7 +16,7 @@ bin/reducer_variance: reducer_variance.cpp
 	mkdir -p bin
 	g++ $(CXXFLAGS) -o $@ reducer_variance.cpp
 
-bin/test_common: test/test_common.cpp common.hpp
+bin/test_common: test/test_common.cpp include/common.hpp
 	mkdir -p bin
 	g++ $(CXXFLAGS) -o $@ test_common.cpp
 
