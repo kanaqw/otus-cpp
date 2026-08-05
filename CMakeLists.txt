@@ -9,7 +9,7 @@ configure_file(version.h.in version.h)
 
 add_executable(fashion_mnist src/main.cpp)
 
-set_target_properties(fashion_mnist parser PROPERTIES
+set_target_properties(fashion_mnist PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
