@@ -7,7 +7,7 @@ project(fashion_mnist VERSION ${PROJECT_VERSION})
 
 configure_file(version.h.in version.h)
 
-add_executable(fashion_mnist src/main.cpp)
+add_executable(fashion_mnist main.cpp)
 
 set_target_properties(fashion_mnist PROPERTIES
     CXX_STANDARD 20
