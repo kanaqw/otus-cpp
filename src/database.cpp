@@ -11,7 +11,6 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -131,23 +130,41 @@ bool parseId(const std::string& s, int& out) {
     }
 }
 
+std::vector<std::string> splitFields(const std::string& line) {
+    std::vector<std::string> fields;
+    size_t start = 0;
+    while (true) {
+        size_t pos = line.find(' ', start);
+        if (pos == std::string::npos) {
+            fields.push_back(line.substr(start));
+            break;
+        }
+        fields.push_back(line.substr(start, pos - start));
+        start = pos + 1;
+    }
+    return fields;
+}
+
 std::string handleCommand(const std::string& rawLine, Database& db) {
     std::string line = rawLine;
     while (!line.empty() && line.back() == '\r') line.pop_back();
 
-    std::istringstream ss(line);
-    std::string cmd;
-    ss >> cmd;
-
-    if (cmd.empty()) {
+    if (line.empty()) {
         return "ERR empty command\n";
     }
 
+    std::vector<std::string> fields = splitFields(line);
+    for (const auto& field : fields) {
+        if (field.empty()) return "ERR invalid separator, expected single space\n";
+    }
+
+    const std::string& cmd = fields[0];
+
     if (cmd == "INSERT") {
-        std::string table, idStr, name;
-        if (!(ss >> table >> idStr >> name)) {
-            return "ERR invalid INSERT syntax\n";
-        }
+        if (fields.size() != 4) return "ERR invalid INSERT syntax\n";
+        const std::string& table = fields[1];
+        const std::string& idStr = fields[2];
+        const std::string& name = fields[3];
         int id;
         if (!parseId(idStr, id)) return "ERR invalid id " + idStr + "\n";
         std::string err = db.insert(table, id, name);
@@ -155,17 +172,18 @@ std::string handleCommand(const std::string& rawLine, Database& db) {
     }
 
     if (cmd == "TRUNCATE") {
-        std::string table;
-        if (!(ss >> table)) return "ERR invalid TRUNCATE syntax\n";
-        std::string err = db.truncate(table);
+        if (fields.size() != 2) return "ERR invalid TRUNCATE syntax\n";
+        std::string err = db.truncate(fields[1]);
         return err.empty() ? "OK\n" : "ERR " + err + "\n";
     }
 
     if (cmd == "INTERSECTION") {
+        if (fields.size() != 1) return "ERR invalid INTERSECTION syntax\n";
         return rowsToResponse(db.intersection());
     }
 
     if (cmd == "SYMMETRIC_DIFFERENCE") {
+        if (fields.size() != 1) return "ERR invalid SYMMETRIC_DIFFERENCE syntax\n";
         return rowsToResponse(db.symmetricDifference());
     }
 
