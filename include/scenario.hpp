@@ -1,6 +1,5 @@
 // scenario.hpp
 // Mirrors the JSON schema produced/consumed by web/sim-ground.html.
-// Keep this struct set in lockstep with the browser editor's export format.
 #pragma once
 #include <string>
 #include <vector>
