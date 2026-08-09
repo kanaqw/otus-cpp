@@ -1,8 +1,7 @@
-// mock_modules.hpp — stand-ins for the upstream modules your real control
+// mock_modules.hpp — stand-ins for the upstream modules real control
 // stack would normally consume (Perception, Localization/Planning). Each
 // mock reads directly from the loaded Scenario so a map-editor file fully
-// determines a run. Swap these out module-by-module as the real ones become
-// available; ControlManager/IControlManager doesn't need to change.
+// determines a run. 
 #pragma once
 #include <vector>
 #include "scenario.hpp"
@@ -46,11 +45,6 @@ inline std::vector<Waypoint> expandCurvedSegments(const std::vector<PointT>& pts
     return out;
 }
 
-// Advances dynamic obstacles along their heading at constant speed each tick;
-// static obstacles never move. Returns world-frame obstacle states. Not fed
-// into ControlManager directly (its interface is vehicle position +
-// trajectory only) — kept for scene visualization and, later, for whatever
-// collision/obstacle-avoidance module sits between Perception and Planning.
 class MockPerception {
 public:
     explicit MockPerception(const Scenario& scenario);
@@ -75,8 +69,7 @@ public:
 // vehicle's current progress out to `horizon_m` ahead, resampled at
 // `spacing_m` intervals so ControlManager always sees evenly spaced points
 // rather than the raw (possibly sparse) map-editor waypoints. Advances
-// "current progress" based on nearest-ahead distance. Swap for your real
-// Planning module's output whenever it's ready — same Trajectory type.
+// "current progress" based on nearest-ahead distance. 
 class MockPlanner : public ITrajectorySource {
 public:
     explicit MockPlanner(std::vector<Waypoint> route, double horizon_m = 15.0, double spacing_m = 1.0)
