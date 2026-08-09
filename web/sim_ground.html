@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Control Core Test Ground</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-canvas:#0b0e11; --bg-panel:#12161b; --bg-panel-2:#171c22;
+    --line:#1f2730; --line-major:#2a333d;
+    --text-1:#d7dde3; --text-2:#7c8794; --text-3:#4c5561;
+    --route:#4fd1c5; --trajectory:#c792ea; --obstacle-static:#f2545b; --obstacle-dynamic:#f2a154; --vehicle:#7ee787;
+    --start-zone:#64d9ff; --finish-zone:#ffd166;
+    --active:#5b9dff; --good:#7ee787; --bad:#f2545b;
+    --mockingjay:#ff6ec7; --mj-preview-fwd:#ff6ec7; --mj-preview-rev:#8a7dff;
+    --mono:'IBM Plex Mono',monospace; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg-canvas);color:var(--text-1);font-family:var(--sans);overflow:hidden;}
+  #app{display:grid;grid-template-rows:auto auto 1fr;height:100vh;width:100vw;overflow:hidden;}
+
+  #toolbar1,#toolbar2{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--bg-panel);
+    border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .brand{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--text-2);
+    text-transform:uppercase;margin-right:14px;white-space:nowrap;}
+  .brand b{color:var(--text-1);}
+  .tabs{display:flex;gap:2px;background:var(--bg-panel-2);border:1px solid var(--line);border-radius:8px;padding:2px;}
+  .tabs button{font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--text-2);
+    background:transparent;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;}
+  .tabs button.active{color:#08110c;background:var(--active);}
+  .seg{display:flex;gap:2px;background:var(--bg-panel-2);border:1px solid var(--line);border-radius:8px;padding:2px;}
+  button{font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--text-2);
+    background:transparent;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;}
+  button:hover{color:var(--text-1);background:#1c2229;}
+  button.active{color:#08110c;background:var(--active);}
+  button.on{color:var(--text-1);background:#1c2229;}
+  button.ghost{border:1px solid var(--line);}
+  button.primary{background:var(--good);color:#08110c;}
+  button.primary:hover{background:#8ff29c;}
+  button.primary:disabled{background:#243026;color:var(--text-3);cursor:default;}
+  .mj-group{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:9px;
+    background:rgba(255,110,199,.08);border:1px solid rgba(255,110,199,.4);}
+  button.mj-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.07em;
+    color:var(--mockingjay);text-transform:uppercase;white-space:nowrap;padding:6px 10px;border-radius:6px;}
+  button.mj-badge:hover{background:rgba(255,110,199,.18);color:var(--mockingjay);}
+  button.mj-badge.on{background:rgba(255,110,199,.22);}
+  .mj-transport{display:flex;align-items:center;gap:4px;}
+  button.mj-vcr{font-size:14px;padding:6px 11px;border-radius:6px;border:1px solid rgba(255,110,199,.35);color:var(--text-1);}
+  button.mj-vcr:hover:not(:disabled){background:rgba(255,110,199,.18);}
+  button.mj-vcr:disabled{color:var(--text-3);border-color:var(--line);cursor:default;}
+  button.mj-vcr.active{background:var(--mockingjay);color:#2a0a1a;border-color:var(--mockingjay);}
+  .divider{width:1px;align-self:stretch;background:var(--line);margin:0 8px;}
+  .spacer{flex:1;}
+  input[type=file]{display:none;}
+  input[type=text],input[type=number]{background:var(--bg-canvas);border:1px solid var(--line-major);
+    color:var(--text-1);font-family:var(--mono);font-size:12px;padding:6px 9px;border-radius:6px;}
+  #wsUrl{width:170px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--bad);display:inline-block;margin-right:6px;}
+  .dot.on{background:var(--good);}
+  #connStatus{font-family:var(--mono);font-size:11.5px;color:var(--text-2);display:flex;align-items:center;white-space:nowrap;}
+
+  #body{position:relative;overflow:hidden;}
+  .view{display:none;grid-template-columns:1fr 320px;height:100%;}
+  .view.active{display:grid;}
+  #canvasWrapEdit,#canvasWrapLive{position:relative;overflow:hidden;background:var(--bg-canvas);}
+  canvas{display:block;cursor:crosshair;}
+  #ruleTop, #ruleLeft{position:absolute;background:var(--bg-panel);z-index:2;pointer-events:none;}
+  #ruleTop{top:0;left:24px;right:0;height:20px;border-bottom:1px solid var(--line);}
+  #ruleLeft{top:20px;left:0;bottom:0;width:24px;border-right:1px solid var(--line);}
+  #ruleCorner{position:absolute;top:0;left:0;width:24px;height:20px;background:var(--bg-panel);
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);z-index:3;}
+
+  #hud{position:absolute;top:12px;left:12px;background:rgba(18,22,27,.85);border:1px solid var(--line);
+    border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:11.5px;color:var(--text-2);
+    display:grid;grid-template-columns:auto auto;gap:3px 14px;}
+  #hud b{color:var(--text-1);font-weight:500;}
+
+  #panelEdit,#panelLive{background:var(--bg-panel);border-left:1px solid var(--line);overflow-y:auto;padding:16px;}
+  #panelEdit h3,#panelLive h3,#postView h3{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--text-2);
+    text-transform:uppercase;margin:0 0 10px;}
+  .card{background:var(--bg-panel-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:12.5px;}
+  .row:last-child{margin-bottom:0;}
+  .row label{color:var(--text-2);}
+  .row input[type=number],.row input[type=text]{width:100px;text-align:right;}
+  .row select{background:var(--bg-canvas);border:1px solid var(--line-major);color:var(--text-1);
+    font-family:var(--sans);font-size:12px;padding:5px 7px;border-radius:5px;}
+  .empty{color:var(--text-3);font-size:12px;line-height:1.6;}
+  .legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;flex-shrink:0;}
+  .legend-row{display:flex;align-items:center;font-size:12px;color:var(--text-2);margin-bottom:6px;}
+  .count{font-family:var(--mono);color:var(--text-1);margin-left:auto;}
+  .btn-full{width:100%;text-align:center;}
+  .btn-danger{background:#2a1416;color:#f2848a;}
+  .btn-danger:hover{background:#3a1a1d;color:#ff9ba0;}
+  .chart{background:var(--bg-panel-2);border:1px solid var(--line);border-radius:10px;padding:6px;margin-bottom:10px;overflow:hidden;}
+
+  #postView{display:none;padding:18px;overflow-y:auto;gap:12px;grid-auto-rows:min-content;height:100%;}
+  #postView.active{display:grid;}
+  #postView .dropzone{background:var(--bg-panel);border:1px dashed var(--line-major);border-radius:12px;
+    padding:22px;text-align:center;color:var(--text-2);font-size:13px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
+  #postView .chartRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  #postView .chart{background:var(--bg-panel);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0;overflow:hidden;}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line-major);border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="toolbar1">
+    <div class="brand">Control Core · <b>Test Ground</b></div>
+    <div class="tabs" id="tabs">
+      <button data-tab="editor" class="active">Editor</button>
+      <button data-tab="live">Live Replay</button>
+      <button data-tab="post">Analysis</button>
+    </div>
+    <div class="divider"></div>
+    <input type="text" id="wsUrl" value="ws://localhost:8765">
+    <button class="ghost" id="connectBtn">Connect</button>
+    <span id="connStatus"><span class="dot" id="connDot"></span><span id="connLabel">disconnected</span></span>
+    <div class="spacer"></div>
+    <button class="primary" id="runBtn" disabled title="Add a vehicle start and a route first">▶ Run in sim_runner</button>
+    <button class="ghost" id="pauseBtn" style="display:none">⏸ Pause</button>
+    <button class="ghost btn-danger" id="stopBtn" style="display:none">■ Stop</button>
+    <div class="divider"></div>
+    <div class="mj-group" id="mjGroup" title="Mockingjay: record raw driver input (pedal/steer/gear) and replay it forward or in reverse">
+      <button class="mj-badge" id="mjToggleBtn">🎬 Mockingjay ▾</button>
+      <span class="mj-transport" id="mjTransport" style="display:none;">
+        <button class="mj-vcr" id="mjPlayBtn" disabled title="Record a new drive">▶</button>
+        <button class="mj-vcr" id="mjPauseBtn" disabled title="Pause">⏸</button>
+        <button class="mj-vcr" id="mjStopBtn" disabled title="Stop">⏹</button>
+        <button class="mj-vcr" id="mjReplayRevBtn" disabled title="Replay backward, to where this segment started">⏪</button>
+        <button class="mj-vcr" id="mjReplayFwdBtn" disabled title="Replay forward from wherever the vehicle is now">⏩</button>
+      </span>
+    </div>
+  </div>
+
+  <div id="toolbar2">
+    <div id="editorTools" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <div class="seg" id="modeSeg">
+        <button data-mode="select" class="active">Select</button>
+        <button data-mode="route">+ Route</button>
+        <button data-mode="trajectory" title="Optional: an explicit path sent to ControlManager as-authored, instead of one derived from the route each tick">+ Trajectory</button>
+        <button data-mode="static">+ Obstacle</button>
+        <button data-mode="dynamic">+ Moving Obstacle</button>
+        <button data-mode="vehicle">Place Vehicle</button>
+        <button data-mode="startZone" title="Reaching this doesn't do anything yet — informational marker only">Start Zone</button>
+        <button data-mode="finishZone" title="Entering this ends the run immediately">Finish Zone</button>
+      </div>
+      <div class="divider"></div>
+      <div class="seg"><button id="snapBtn" class="on">Snap 1m</button></div>
+      <div class="spacer"></div>
+      <div class="seg">
+        <button class="ghost" id="newBtn">New</button>
+        <button class="ghost" id="loadBtn">Import JSON</button>
+        <button class="ghost" id="exportBtn">Export JSON</button>
+      </div>
+      <input type="file" id="fileInput" accept="application/json">
+    </div>
+    <div id="liveTools" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;">
+      <span class="empty" id="liveHint">Editing the map updates the faint reference route here immediately — no export needed.</span>
+      <span class="empty" id="mjHint" style="display:none;color:var(--mockingjay);font-family:var(--mono);"></span>
+      <div class="spacer"></div>
+      <button class="ghost" id="clearTrailBtn">Clear trail</button>
+    </div>
+    <div id="postTools" style="display:none;align-items:center;gap:10px;">
+      <button class="ghost" id="analyzeSessionBtn">Analyze last run from this session</button>
+      <span class="empty">or</span>
+      <button class="ghost" id="csvBtnTrigger">Load CSV file</button>
+      <input type="file" id="csvInput" accept=".csv">
+    </div>
+  </div>
+
+  <div id="body">
+    <div class="view active" id="editorView">
+      <div id="canvasWrapEdit">
+        <canvas id="editCanvas"></canvas>
+        <div id="ruleTop"></div>
+        <div id="ruleLeft"></div>
+        <div id="ruleCorner"></div>
+      </div>
+      <div id="panelEdit">
+        <h3>Scenario</h3>
+        <div class="card">
+          <div class="row"><label>Name</label><input type="text" id="scenarioName" value="unnamed_scenario"></div>
+          <div class="row"><label>Waypoints</label><span class="count" id="cRoute">0</span></div>
+          <div class="row"><label>Trajectory points</label><span class="count" id="cTrajectory">0</span></div>
+          <div class="row"><label>Static obstacles</label><span class="count" id="cStatic">0</span></div>
+          <div class="row"><label>Moving obstacles</label><span class="count" id="cDynamic">0</span></div>
+          <div class="row"><label>Vehicle start</label><span class="count" id="cVehicle">not set</span></div>
+          <div class="row"><label>Start zone</label><span class="count" id="cStartZone">not set</span></div>
+          <div class="row"><label>Finish zone</label><span class="count" id="cFinishZone">not set</span></div>
+        </div>
+        <h3>Vehicle Config</h3>
+        <div class="card" id="vehicleConfigCard">
+          <div class="row"><label>Gear</label>
+            <select id="vcGear">
+              <option value="park">Park</option>
+              <option value="reverse">Reverse</option>
+              <option value="neutral">Neutral</option>
+              <option value="drive" selected>Drive</option>
+            </select>
+          </div>
+          <div class="row"><label>Max speed (m/s)</label><input type="number" step="0.5" min="0" id="vcMaxSpeed" value="20"></div>
+          <div class="row"><label>Max wheel turn (deg)</label><input type="number" step="1" min="0" max="80" id="vcMaxSteer" value="34"></div>
+          <div class="row"><label>Max accel (m/s²)</label><input type="number" step="0.1" min="0" id="vcMaxAccel" value="3"></div>
+          <div class="row"><label>Max decel (m/s²)</label><input type="number" step="0.1" max="0" id="vcMaxDecel" value="-6"></div>
+          <div class="row"><label>Wheelbase (m)</label><input type="number" step="0.1" min="0.5" id="vcWheelbase" value="2.7"></div>
+        </div>
+        <h3>Legend</h3>
+        <div class="card">
+          <div class="legend-row"><span class="legend-dot" style="background:var(--vehicle)"></span>Vehicle start pose</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--start-zone)"></span>Start zone (informational)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--finish-zone)"></span>Finish zone (ends the run)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--route)"></span>Route waypoint</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--trajectory)"></span>Authored trajectory point</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--obstacle-static)"></span>Static obstacle</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--obstacle-dynamic)"></span>Moving obstacle</div>
+        </div>
+        <h3>Selection</h3>
+        <div class="card" id="selCard">
+          <div class="empty">Nothing selected. Click an item on the canvas to edit its properties, or pick a tool above to add one.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="liveView">
+      <div id="canvasWrapLive">
+        <canvas id="liveCanvas"></canvas>
+        <div id="hud">
+          <span>t</span><b id="hT">0.00 s</b>
+          <span>gear</span><b id="hGear">—</b>
+          <span>speed</span><b id="hSpeed">0.0 m/s</b>
+          <span>steering</span><b id="hSteer">0.0°</b>
+          <span>accel</span><b id="hAccel">0.00 m/s²</b>
+          <span>route</span><b id="hRoute">idle</b>
+        </div>
+      </div>
+      <div id="panelLive">
+        <h3>Live signals</h3>
+        <div class="chart" id="chartSpeed" style="height:170px"></div>
+        <div class="chart" id="chartSteer" style="height:170px"></div>
+        <div class="chart" id="chartAccel" style="height:170px"></div>
+        <h3>Session</h3>
+        <div class="empty" id="sessionInfo">Not connected yet.</div>
+      </div>
+    </div>
+
+    <div id="postView">
+      <div class="dropzone" id="dropHint">No run analyzed yet — run a scenario and click "Analyze last run from this session", or load a saved CSV.</div>
+      <div class="chartRow">
+        <div class="chart" id="pTrajectory" style="height:340px"></div>
+        <div class="chart" id="pSpeed" style="height:340px"></div>
+      </div>
+      <div class="chartRow">
+        <div class="chart" id="pSteer" style="height:300px"></div>
+        <div class="chart" id="pAccel" style="height:300px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ============================================================
+  // Shared state — this is what makes tabs "hot plug" into each other.
+  // ============================================================
+  let scenario = freshScenario();
+  let idCounter = 1;
+  let ws = null;
+  let sessionTicks = null;      // full-resolution buffer of the most recent run, for "analyze last run"
+  let sessionScenarioName = null;
+  let runInProgress = false;
+  let runPaused = false;
+  // Mockingjay: record/replay raw driver inputs (pedal/steering/gear).
+  // "for now mocked" via keyboard, later a real ROS2 driver-input topic —
+  // see include/teleop_input.hpp on the server side.
+  let mjExpanded = false;          // is the VCR transport row shown?
+  let mockingjayActive = false;    // a mockingjay run (record OR replay) is in progress
+  let mockingjayRecording = false; // specifically: the active run is a recording (vs. a replay)
+  let mockingjayHasRecording = false;
+
+  function freshScenario(){
+    return {
+      meta:{ name:"unnamed_scenario", created:new Date().toISOString(), grid_size_m:1 },
+      vehicle:null,
+      vehicle_config:{ max_speed_mps:20, max_steer_deg:34, max_accel_mps2:3, max_decel_mps2:-6, wheelbase_m:2.7, gear:'drive' },
+      start_zone:null, finish_zone:null,
+      route:[], trajectory:[], obstacles:[]
+    };
+  }
+  function nextId(){ return idCounter++; }
+
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  // ============================================================
+  // Shared view — one world-space camera for BOTH the editor and live-replay
+  // canvases, so panning/zooming in one keeps the other aligned to the same
+  // world position when you switch tabs. Stored as scale (px per metre) plus
+  // the world point currently under each canvas's centre (cx, cy). Each
+  // canvas turns that into its own pixel offset at draw time using its own
+  // size, so the two staying in sync doesn't require them to be the same
+  // pixel dimensions.
+  const sharedView = { scale: 22, cx: 0, cy: 0 };
+
+  // ============================================================
+  // MiniChart — a tiny self-contained canvas line-chart, so the tool has
+  // zero external dependencies and works fully offline. Replaces the former
+  // CDN Plotly usage. Each instance owns one <canvas> filling its host div.
+  //   new MiniChart(hostId, {title, xlabel, series:[{color, dash}]})
+  //   chart.setData([{x:[...], y:[...]}, ...])   // one array per series
+  //   chart.setEqualAspect(true)                 // for the x/y trajectory plot
+  // ============================================================
+  class MiniChart {
+    constructor(hostId, opts={}){
+      this.host = document.getElementById(hostId);
+      this.opts = opts;
+      this.series = opts.series || [{color:'#7ee787'}];
+      this.data = this.series.map(()=>({x:[],y:[]}));
+      this.equalAspect = false;
+      // The canvas is absolutely positioned (inset:0) inside a relatively
+      // positioned host, fully removed from normal document flow. This is
+      // the robust fix for the runaway-growth bug: a canvas's drawing-buffer
+      // resolution (width/height attributes) can otherwise be used as its
+      // min-content size by an ANCESTOR grid/flex container's automatic
+      // minimum sizing — and that can happen at any nesting level up the
+      // tree (it turned out not to be just the immediate .chart container
+      // here, but #app's own implicit grid column too). Taking the canvas
+      // out of flow entirely sidesteps that regardless of how many levels
+      // are involved, rather than patching overflow:hidden/min-width:0 at
+      // every ancestor one at a time.
+      this.host.style.position = 'relative';
+      this.host.style.overflow = 'hidden';
+      this.host.style.padding = '0';
+      this.host.style.minWidth = '0';
+      this.host.style.minHeight = '0';
+      this.host.innerHTML = '';
+      this.canvas = document.createElement('canvas');
+      this.canvas.style.position = 'absolute';
+      this.canvas.style.inset = '0';
+      this.canvas.style.width = '100%';
+      this.canvas.style.height = '100%';
+      this.host.appendChild(this.canvas);
+      this.ctx = this.canvas.getContext('2d');
+      this._lastW = 0; this._lastH = 0;
+      if('ResizeObserver' in window){
+        new ResizeObserver(()=>this.draw()).observe(this.host);
+      }
+    }
+    setEqualAspect(v){ this.equalAspect = v; return this; }
+    setData(arr){ this.data = arr; this.draw(); }
+    draw(){
+      // clientWidth/Height (padding box, no scrollbar) of the now-unpadded
+      // host — safe to use directly since we zeroed the host's own padding
+      // above and moved all label margins into the canvas's own draw
+      // padding (padL/padR/padT/padB below) instead.
+      const W = Math.max(1, this.host.clientWidth);
+      const H = Math.max(1, this.host.clientHeight);
+
+      // Only touch the backing store when the size actually changed —
+      // avoids redundant resize churn (not required for correctness now
+      // that the canvas is out of flow, but cheap insurance).
+      const bw = Math.round(W*devicePixelRatio), bh = Math.round(H*devicePixelRatio);
+      if(this.canvas.width !== bw || this.canvas.height !== bh){
+        this.canvas.width = bw; this.canvas.height = bh;
+      }
+      const c = this.ctx; c.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+      c.clearRect(0,0,W,H);
+
+      const padL=46, padR=12, padT=this.opts.title?24:10, padB=26;
+      const plotW = W-padL-padR, plotH = H-padT-padB;
+
+      // title
+      if(this.opts.title){
+        c.fillStyle = css('--text-1'); c.font='11px IBM Plex Mono'; c.textAlign='left'; c.textBaseline='top';
+        c.fillText(this.opts.title, padL, 6);
+      }
+
+      // data bounds
+      let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity, any=false;
+      for(const s of this.data) for(let i=0;i<s.x.length;i++){
+        const x=s.x[i], y=s.y[i];
+        if(!isFinite(x)||!isFinite(y)) continue;
+        any=true; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
+      }
+      if(!any){
+        c.fillStyle = css('--text-3'); c.font='11px IBM Plex Mono'; c.textAlign='center'; c.textBaseline='middle';
+        c.fillText('no data', padL+plotW/2, padT+plotH/2); return;
+      }
+      if(minX===maxX){ minX-=0.5; maxX+=0.5; }
+      if(minY===maxY){ minY-=0.5; maxY+=0.5; }
+      let padY=(maxY-minY)*0.08; minY-=padY; maxY+=padY;
+
+      if(this.equalAspect){
+        // keep x and y at the same units/px so trajectories aren't distorted
+        const sx = plotW/(maxX-minX), sy = plotH/(maxY-minY), s = Math.min(sx,sy);
+        const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+        minX = cx - plotW/(2*s); maxX = cx + plotW/(2*s);
+        minY = cy - plotH/(2*s); maxY = cy + plotH/(2*s);
+      }
+
+      const X = x => padL + (x-minX)/(maxX-minX)*plotW;
+      const Y = y => padT + plotH - (y-minY)/(maxY-minY)*plotH;
+
+      // grid + axis ticks
+      c.strokeStyle = css('--line'); c.fillStyle = css('--text-3');
+      c.font='9px IBM Plex Mono'; c.lineWidth=1;
+      const nTicks=4;
+      c.textAlign='right'; c.textBaseline='middle';
+      for(let i=0;i<=nTicks;i++){
+        const yy = minY+(maxY-minY)*i/nTicks; const py=Y(yy);
+        c.beginPath(); c.moveTo(padL,py+.5); c.lineTo(padL+plotW,py+.5); c.stroke();
+        c.fillText(fmtTick(yy), padL-5, py);
+      }
+      c.textAlign='center'; c.textBaseline='top';
+      for(let i=0;i<=nTicks;i++){
+        const xx = minX+(maxX-minX)*i/nTicks; const px=X(xx);
+        c.fillText(fmtTick(xx), px, padT+plotH+5);
+      }
+
+      // series
+      this.data.forEach((s,si)=>{
+        const spec = this.series[si]||{};
+        c.strokeStyle = spec.color || '#7ee787'; c.lineWidth = spec.width||2;
+        c.setLineDash(spec.dash||[]);
+        if(spec.mode==='markers'){
+          c.fillStyle = spec.color || '#5b9dff';
+          for(let i=0;i<s.x.length;i++){ if(!isFinite(s.x[i]))continue; c.beginPath(); c.arc(X(s.x[i]),Y(s.y[i]),1.6,0,Math.PI*2); c.fill(); }
+        } else {
+          c.beginPath(); let started=false;
+          for(let i=0;i<s.x.length;i++){
+            if(!isFinite(s.x[i])||!isFinite(s.y[i])) continue;
+            const px=X(s.x[i]), py=Y(s.y[i]);
+            started ? c.lineTo(px,py) : c.moveTo(px,py); started=true;
+          }
+          c.stroke();
+        }
+        c.setLineDash([]);
+      });
+    }
+  }
+  function fmtTick(v){
+    const a=Math.abs(v);
+    if(a!==0 && (a<0.01 || a>=10000)) return v.toExponential(1);
+    return (Math.round(v*100)/100).toString();
+  }
+
+  // ============================================================
+  // Tabs
+  // ============================================================
+  document.getElementById('tabs').addEventListener('click', e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b===btn));
+    document.getElementById('editorView').classList.toggle('active', tab==='editor');
+    document.getElementById('liveView').classList.toggle('active', tab==='live');
+    document.getElementById('postView').classList.toggle('active', tab==='post');
+    document.getElementById('editorTools').style.display = tab==='editor' ? 'flex' : 'none';
+    document.getElementById('liveTools').style.display = tab==='live' ? 'flex' : 'none';
+    document.getElementById('postTools').style.display = tab==='post' ? 'flex' : 'none';
+    if(tab==='editor') requestAnimationFrame(resizeEdit);
+    if(tab==='live'){ ensureLiveCharts(); requestAnimationFrame(resizeLive); }
+  });
+
+  // ============================================================
+  // Connection + Run button (shared across tabs)
+  // ============================================================
+  function setConnLabel(text, on){
+    document.getElementById('connLabel').textContent = text;
+    document.getElementById('connDot').classList.toggle('on', on);
+  }
+  function connect(){
+    const url = document.getElementById('wsUrl').value.trim();
+    try{ ws = new WebSocket(url); } catch(err){ alert('Could not open '+url+': '+err.message); return; }
+    setConnLabel('connecting…', false);
+    ws.onopen = ()=>{ setConnLabel('connected', true); document.getElementById('connectBtn').textContent='Disconnect'; };
+    ws.onmessage = (ev)=>{ try{ handleServerMessage(JSON.parse(ev.data)); }catch(e){} };
+    ws.onclose = ()=>{ setConnLabel('disconnected', false); document.getElementById('connectBtn').textContent='Connect'; ws=null; setRunInProgress(false); };
+    ws.onerror = ()=>{ setConnLabel('error', false); };
+  }
+  document.getElementById('connectBtn').addEventListener('click', ()=>{ ws ? ws.close() : connect(); });
+
+  function updateRunButton(){
+    document.getElementById('runBtn').disabled = runInProgress || !(scenario.vehicle && scenario.route.length>0);
+    updateMockingjayButtons();
+  }
+  function updateMockingjayButtons(){
+    const toggleBtn = document.getElementById('mjToggleBtn');
+    toggleBtn.classList.toggle('on', mjExpanded);
+    toggleBtn.textContent = '🎬 Mockingjay ' + (mjExpanded ? '▴' : '▾');
+    document.getElementById('mjTransport').style.display = mjExpanded ? '' : 'none';
+
+    // ▶ Play: starts a new recording when idle, resumes when paused.
+    const playBtn = document.getElementById('mjPlayBtn');
+    playBtn.disabled = mockingjayActive ? !(runPaused) : (runInProgress || !scenario.vehicle);
+    playBtn.title = mockingjayActive ? 'Resume' : (scenario.vehicle ? 'Record a new drive' : 'Place a vehicle in the Editor first');
+    playBtn.classList.toggle('active', mockingjayActive && !runPaused);
+
+    // ⏸ Pause: only meaningful while a mockingjay run is actually going.
+    document.getElementById('mjPauseBtn').disabled = !mockingjayActive || runPaused;
+
+    // ⏹ Stop: ends the active recording or replay.
+    document.getElementById('mjStopBtn').disabled = !mockingjayActive;
+
+    // ⏪/⏩ Replay: only once a recording exists and nothing's currently running.
+    document.getElementById('mjReplayRevBtn').disabled = mockingjayActive || !mockingjayHasRecording;
+    document.getElementById('mjReplayFwdBtn').disabled = mockingjayActive || !mockingjayHasRecording;
+
+    document.getElementById('mjHint').style.display = mockingjayRecording ? '' : 'none';
+  }
+  function setRunInProgress(on){
+    runInProgress = on;
+    document.getElementById('stopBtn').style.display = on ? '' : 'none';
+    document.getElementById('pauseBtn').style.display = on ? '' : 'none';
+    if(!on) setRunPaused(false);
+    updateRunButton();
+  }
+  function setRunPaused(paused){
+    runPaused = paused;
+    document.getElementById('pauseBtn').textContent = paused ? '▶ Resume' : '⏸ Pause';
+    updateMockingjayButtons();
+  }
+  document.getElementById('runBtn').addEventListener('click', ()=>{
+    scenario.meta.name = document.getElementById('scenarioName').value || 'unnamed_scenario';
+    const send = ()=>{
+      ws.send(JSON.stringify({ type:'run_scenario', scenario }));
+      document.querySelector('#tabs button[data-tab="live"]').click();
+    };
+    if(ws && ws.readyState===WebSocket.OPEN){ send(); }
+    else {
+      connect();
+      ws.addEventListener('open', send, {once:true});
+    }
+  });
+  document.getElementById('stopBtn').addEventListener('click', ()=>{
+    if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({ type:'stop_run' }));
+  });
+  document.getElementById('pauseBtn').addEventListener('click', ()=>{
+    if(!(ws && ws.readyState===WebSocket.OPEN)) return;
+    ws.send(JSON.stringify({ type: runPaused ? 'resume_run' : 'pause_run' }));
+  });
+
+  // ---------- Mockingjay: record/replay raw driver inputs ----------
+  // "For now mocked" via keyboard (WASD pedal/steer, 1-4 gear); the same
+  // teleop_input WS message the server consumes today is exactly what a
+  // real ROS2 driver-input subscriber would translate from a topic later
+  // (see include/teleop_input.hpp).
+  const TELEOP_DT_S = 0.05;
+  const TELEOP_RAMP_UP_S = 0.5, TELEOP_RAMP_DOWN_S = 0.3;
+  let teleopInterval = null;
+  let teleopKeys = { w:false, s:false, a:false, d:false };
+  let teleopPedal = 0, teleopSteer = 0, teleopGear = 'drive';
+
+  function rampToward(current, target, dtS){
+    const rate = target > current ? 1/TELEOP_RAMP_UP_S : 1/TELEOP_RAMP_DOWN_S;
+    const maxDelta = rate * dtS;
+    const delta = target - current;
+    return Math.abs(delta) <= maxDelta ? target : current + Math.sign(delta) * maxDelta;
+  }
+  function sendTeleopInput(){
+    const pedalTarget = teleopKeys.w ? 1 : (teleopKeys.s ? -1 : 0);
+    // steering is positive = left per vehicle_model.hpp's convention, so A
+    // (left) is +1 and D (right) is -1 — inverted from the on-screen key
+    // feels "clockwise" mapping you'd guess at first.
+    const steerTarget = teleopKeys.a ? 1 : (teleopKeys.d ? -1 : 0);
+    teleopPedal = rampToward(teleopPedal, pedalTarget, TELEOP_DT_S);
+    teleopSteer = rampToward(teleopSteer, steerTarget, TELEOP_DT_S);
+    if(ws && ws.readyState===WebSocket.OPEN){
+      ws.send(JSON.stringify({ type:'teleop_input', pedal:teleopPedal, steering:teleopSteer, gear:teleopGear }));
+    }
+    document.getElementById('mjHint').textContent =
+      'pedal '+teleopPedal.toFixed(2)+' · steer '+teleopSteer.toFixed(2)+' · gear '+teleopGear.toUpperCase()
+      +'  (W/S pedal · A/D steer · 1 P · 2 R · 3 N · 4 D)';
+  }
+  function startTeleopSending(){
+    teleopPedal = 0; teleopSteer = 0; teleopGear = 'drive';
+    teleopKeys = { w:false, s:false, a:false, d:false };
+    if(teleopInterval) clearInterval(teleopInterval);
+    teleopInterval = setInterval(sendTeleopInput, TELEOP_DT_S*1000);
+    sendTeleopInput(); // populate the readout immediately instead of waiting for the first tick
+  }
+  function stopTeleopSending(){
+    if(teleopInterval){ clearInterval(teleopInterval); teleopInterval = null; }
+  }
+  window.addEventListener('keydown',(e)=>{
+    if(!mockingjayRecording || document.activeElement.tagName==='INPUT') return;
+    const k = e.key.toLowerCase();
+    if(k==='w'||k==='s'||k==='a'||k==='d'){ teleopKeys[k] = true; e.preventDefault(); }
+    else if(k==='1') teleopGear = 'park';
+    else if(k==='2') teleopGear = 'reverse';
+    else if(k==='3') teleopGear = 'neutral';
+    else if(k==='4') teleopGear = 'drive';
+  });
+  window.addEventListener('keyup',(e)=>{
+    const k = e.key.toLowerCase();
+    if(k==='w'||k==='s'||k==='a'||k==='d') teleopKeys[k] = false;
+  });
+
+  document.getElementById('mjToggleBtn').addEventListener('click', ()=>{
+    mjExpanded = !mjExpanded;
+    updateMockingjayButtons();
+  });
+  document.getElementById('mjPlayBtn').addEventListener('click', ()=>{
+    if(mockingjayActive){
+      // already recording/replaying and paused -> resume
+      if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({ type:'resume_run' }));
+      return;
+    }
+    scenario.meta.name = document.getElementById('scenarioName').value || 'unnamed_scenario';
+    const send = ()=>{
+      ws.send(JSON.stringify({ type:'mockingjay_start_record', scenario }));
+      document.querySelector('#tabs button[data-tab="live"]').click();
+      mockingjayActive = true;
+      mockingjayRecording = true;
+      mjExpanded = true;
+      startTeleopSending();
+      updateMockingjayButtons();
+    };
+    if(ws && ws.readyState===WebSocket.OPEN){ send(); }
+    else { connect(); ws.addEventListener('open', send, {once:true}); }
+  });
+  document.getElementById('mjPauseBtn').addEventListener('click', ()=>{
+    if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({ type:'pause_run' }));
+  });
+  document.getElementById('mjStopBtn').addEventListener('click', ()=>{
+    if(!(ws && ws.readyState===WebSocket.OPEN)) return;
+    ws.send(JSON.stringify({ type: mockingjayRecording ? 'mockingjay_stop_record' : 'stop_run' }));
+    stopTeleopSending();
+  });
+  document.getElementById('mjReplayFwdBtn').addEventListener('click', ()=>{
+    if(!(ws && ws.readyState===WebSocket.OPEN)) return;
+    ws.send(JSON.stringify({ type:'mockingjay_replay', direction:'forward' }));
+    document.querySelector('#tabs button[data-tab="live"]').click();
+    mockingjayActive = true; mockingjayRecording = false; mjExpanded = true;
+    updateMockingjayButtons();
+  });
+  document.getElementById('mjReplayRevBtn').addEventListener('click', ()=>{
+    if(!(ws && ws.readyState===WebSocket.OPEN)) return;
+    ws.send(JSON.stringify({ type:'mockingjay_replay', direction:'reverse' }));
+    document.querySelector('#tabs button[data-tab="live"]').click();
+    mockingjayActive = true; mockingjayRecording = false; mjExpanded = true;
+    updateMockingjayButtons();
+  });
+
+  function handleServerMessage(msg){
+    if(msg.type==='run_started'){
+      setRunInProgress(true);
+      setRunPaused(false);
+      mockingjayActive = !!(msg.mode && msg.mode.indexOf('mockingjay')===0);
+      mockingjayRecording = msg.mode === 'mockingjay_record';
+      if(mockingjayActive) mjExpanded = true;
+      updateMockingjayButtons();
+      sessionTicks = { t:[], vehicle_x:[], vehicle_y:[], vehicle_speed_mps:[], target_x:[], target_y:[], target_speed_mps:[], steering_deg:[], accel_mps2:[] };
+      sessionScenarioName = msg.scenario_name;
+      liveTBuf.length=0; liveSpeedBuf.length=0; liveSteerBuf.length=0; liveAccelBuf.length=0; liveTrail.length=0;
+      document.getElementById('sessionInfo').textContent = (msg.mode ? 'Mockingjay — ' : 'Running "'+msg.scenario_name+'"') + (msg.mode==='mockingjay_record' ? 'recording…' : msg.mode==='mockingjay_replay_forward' ? 'replaying forward…' : msg.mode==='mockingjay_replay_reverse' ? 'replaying in reverse…' : '…');
+      document.getElementById('hRoute').textContent = 'running';
+    } else if(msg.type==='tick'){
+      pushLiveTick(msg);
+      if(sessionTicks){
+        sessionTicks.t.push(msg.t);
+        sessionTicks.vehicle_x.push(msg.vehicle.x); sessionTicks.vehicle_y.push(msg.vehicle.y);
+        sessionTicks.vehicle_speed_mps.push(msg.vehicle.speed_mps);
+        sessionTicks.target_x.push(msg.target.x); sessionTicks.target_y.push(msg.target.y);
+        sessionTicks.target_speed_mps.push(msg.target.speed_mps);
+        sessionTicks.steering_deg.push(msg.control.steering_deg); sessionTicks.accel_mps2.push(msg.control.accel_mps2);
+      }
+    } else if(msg.type==='run_paused'){
+      setRunPaused(true);
+      document.getElementById('hRoute').textContent = 'paused';
+    } else if(msg.type==='run_resumed'){
+      setRunPaused(false);
+      document.getElementById('hRoute').textContent = 'running';
+    } else if(msg.type==='run_complete'){
+      setRunInProgress(false);
+      document.getElementById('sessionInfo').textContent =
+        (msg.stopped ? 'Stopped — ' : 'Finished — ')+msg.ticks+' ticks over '+msg.duration_s.toFixed(1)+'s. Wrote '+msg.csv_path+' on the server. '
+        +'Switch to Analysis to inspect this run.';
+      document.getElementById('hRoute').textContent = msg.stopped ? 'stopped' : 'finished';
+      if(msg.mode==='mockingjay_record'){
+        mockingjayHasRecording = (msg.frames_recorded||0) > 0;
+        stopTeleopSending();
+      }
+      if(msg.mode && msg.mode.indexOf('mockingjay')===0){
+        mockingjayActive = false;
+        mockingjayRecording = false;
+        updateMockingjayButtons();
+      }
+    } else if(msg.type==='run_error'){
+      setRunInProgress(false);
+      document.getElementById('sessionInfo').textContent = 'Server rejected the scenario: '+msg.message;
+      if(mockingjayActive){ mockingjayActive = false; mockingjayRecording = false; stopTeleopSending(); updateMockingjayButtons(); }
+    } else if(msg.type==='mockingjay_preview'){
+      mjPreviewForward = msg.forward||[];
+      mjPreviewReverse = msg.reverse||[];
+      drawLive();
+    }
+  }
+
+  // ============================================================
+  // EDITOR TAB
+  // ============================================================
+  const editCanvas = document.getElementById('editCanvas');
+  const ectx = editCanvas.getContext('2d');
+  const editWrap = document.getElementById('canvasWrapEdit');
+  let mode = 'select';
+  let snap = 1;
+  let selected = null;
+  // eView.x/eView.y are the pixel offset for THIS canvas, recomputed from
+  // sharedView (scale + world-centre) and the canvas size before every draw
+  // or hit-test. scale mirrors sharedView.scale. Never set eView.* directly
+  // as the source of truth — write pan/zoom back into sharedView via
+  // syncEditToShared().
+  let eView = { x:0, y:0, scale: sharedView.scale };
+  let eDragging = null, ePanning = null, eSpaceDown = false, eMouseWorld = {x:0,y:0};
+
+  function refreshEView(){
+    const r = editWrap.getBoundingClientRect();
+    eView.scale = sharedView.scale;
+    // want: world (cx,cy) to land at screen centre (r.width/2, r.height/2)
+    // screen = offset + world*scale (y flipped) → offset = centre - world*scale
+    eView.x = r.width/2 - sharedView.cx * sharedView.scale;
+    eView.y = r.height/2 + sharedView.cy * sharedView.scale;
+  }
+  function syncEditToShared(){
+    const r = editWrap.getBoundingClientRect();
+    sharedView.scale = eView.scale;
+    sharedView.cx = (r.width/2 - eView.x) / eView.scale;
+    sharedView.cy = -(r.height/2 - eView.y) / eView.scale;
+  }
+
+  function resizeEdit(){
+    const r = editWrap.getBoundingClientRect();
+    editCanvas.width = r.width*devicePixelRatio; editCanvas.height = r.height*devicePixelRatio;
+    editCanvas.style.width = r.width+'px'; editCanvas.style.height = r.height+'px';
+    drawEdit();
+  }
+  window.addEventListener('resize', resizeEdit);
+  function ew2s(x,y){ return { x: eView.x + x*eView.scale, y: eView.y - y*eView.scale }; }
+  function es2w(sx,sy){ return { x: (sx-eView.x)/eView.scale, y: -(sy-eView.y)/eView.scale }; }
+  function esnap(v){ return snap>0 ? Math.round(v/snap)*snap : v; }
+  function eMousePos(e){ const r = editCanvas.getBoundingClientRect(); return { x:e.clientX-r.left, y:e.clientY-r.top }; }
+
+  function drawEdit(){
+    refreshEView();
+    const r = editWrap.getBoundingClientRect();
+    ectx.save(); ectx.scale(devicePixelRatio, devicePixelRatio);
+    ectx.clearRect(0,0,r.width,r.height);
+    ectx.fillStyle = css('--bg-canvas'); ectx.fillRect(0,0,r.width,r.height);
+    drawGridOn(ectx, r, eView, ew2s, es2w);
+    drawObstaclesEdit(); drawRouteEdit(); drawTrajectoryEdit(); drawVehicleEdit(); drawZonesEdit(); drawEditPreview();
+    ectx.restore();
+    drawRulers();
+  }
+
+  function drawGridOn(c, r, view, w2s, s2w){
+    const target=40; const raw=target/view.scale; const pow=Math.pow(10,Math.floor(Math.log10(raw)));
+    const n=raw/pow; let step; if(n<1.5) step=1; else if(n<3.5) step=2; else if(n<7.5) step=5; else step=10;
+    step*=pow; const major=step*5;
+    const tl=s2w(0,0), br=s2w(r.width,r.height);
+    c.lineWidth=1;
+    for(let x=Math.floor(tl.x/step)*step; x<=br.x; x+=step){
+      const s=w2s(x,0); c.strokeStyle = Math.abs(x%major)<1e-6 ? css('--line-major') : css('--line');
+      c.beginPath(); c.moveTo(s.x+.5,0); c.lineTo(s.x+.5,r.height); c.stroke();
+    }
+    for(let y=Math.floor(br.y/step)*step; y<=tl.y; y+=step){
+      const s=w2s(0,y); c.strokeStyle = Math.abs(y%major)<1e-6 ? css('--line-major') : css('--line');
+      c.beginPath(); c.moveTo(0,s.y+.5); c.lineTo(r.width,s.y+.5); c.stroke();
+    }
+    c.strokeStyle = '#33404d'; const o = w2s(0,0);
+    c.beginPath(); c.moveTo(o.x+.5,0); c.lineTo(o.x+.5,r.height); c.stroke();
+    c.beginPath(); c.moveTo(0,o.y+.5); c.lineTo(r.width,o.y+.5); c.stroke();
+    return step;
+  }
+
+  function pickGridStepFor(view){
+    const target=40; const raw=target/view.scale; const pow=Math.pow(10,Math.floor(Math.log10(raw)));
+    const n=raw/pow; let step; if(n<1.5) step=1; else if(n<3.5) step=2; else if(n<7.5) step=5; else step=10;
+    return step*pow;
+  }
+
+  // ============================================================
+  // Curved segments — each point can bow the segment to its NEXT point into
+  // a quadratic Bezier via (ctrl_x, ctrl_y). A control point sitting exactly
+  // at the segment's midpoint is mathematically identical to a straight
+  // line, so "curved:false" and "no ctrl stored yet" both just mean "use the
+  // live midpoint" — no separate straight-line code path needed anywhere.
+  // ============================================================
+  function segCtrl(pA, pB){
+    if(pA.curved) return {x:pA.ctrl_x, y:pA.ctrl_y};
+    return {x:(pA.x+pB.x)/2, y:(pA.y+pB.y)/2};
+  }
+  function bezierAt(pA, ctrl, pB, t){
+    const mt = 1-t;
+    return { x: mt*mt*pA.x + 2*mt*t*ctrl.x + t*t*pB.x, y: mt*mt*pA.y + 2*mt*t*ctrl.y + t*t*pB.y };
+  }
+  function drawCurvedPolyline(ctx, pts, w2s){
+    if(pts.length<2) return;
+    ctx.beginPath();
+    const s0 = w2s(pts[0].x, pts[0].y); ctx.moveTo(s0.x, s0.y);
+    for(let i=0;i<pts.length-1;i++){
+      const ctrl = segCtrl(pts[i], pts[i+1]);
+      const cs = w2s(ctrl.x, ctrl.y), s1 = w2s(pts[i+1].x, pts[i+1].y);
+      ctx.quadraticCurveTo(cs.x, cs.y, s1.x, s1.y);
+    }
+    ctx.stroke();
+  }
+  // Distance from a world point to segment i (pts[i]->pts[i+1]), sampled
+  // along its curve. Returns Infinity if there's no such segment.
+  function distToSegment(pts, i, wx, wy, samples=16){
+    if(i<0 || i+1>=pts.length) return Infinity;
+    const pA=pts[i], pB=pts[i+1], ctrl=segCtrl(pA,pB);
+    let best=Infinity, prev=pA;
+    for(let s=1;s<=samples;s++){
+      const t=s/samples, cur=bezierAt(pA,ctrl,pB,t);
+      best = Math.min(best, distPointToChord(wx,wy, prev.x,prev.y, cur.x,cur.y));
+      prev = cur;
+    }
+    return best;
+  }
+  function distPointToChord(px,py, ax,ay, bx,by){
+    const dx=bx-ax, dy=by-ay;
+    const len2 = dx*dx+dy*dy;
+    let t = len2>1e-9 ? ((px-ax)*dx+(py-ay)*dy)/len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const cx=ax+dx*t, cy=ay+dy*t;
+    return Math.hypot(px-cx, py-cy);
+  }
+  function findSegmentNear(pts, wx, wy, tol){
+    let bestIdx=-1, bestDist=tol;
+    for(let i=0;i<pts.length-1;i++){
+      const d = distToSegment(pts, i, wx, wy);
+      if(d<bestDist){ bestDist=d; bestIdx=i; }
+    }
+    return bestIdx;
+  }
+
+  function drawRouteEdit(){
+    const pts = scenario.route;
+    if(pts.length>1){
+      ectx.strokeStyle = css('--route'); ectx.lineWidth=2; ectx.setLineDash([]);
+      drawCurvedPolyline(ectx, pts, ew2s);
+    }
+    pts.forEach((p,i)=>{
+      const s = ew2s(p.x,p.y);
+      const isSel = selected && selected.type==='route' && selected.id===p.id;
+      ectx.beginPath(); ectx.arc(s.x,s.y, isSel?7:5.5, 0, Math.PI*2);
+      ectx.fillStyle = css('--route'); ectx.globalAlpha = isSel?1:0.9; ectx.fill(); ectx.globalAlpha=1;
+      if(isSel){ ectx.strokeStyle = css('--active'); ectx.lineWidth=2; ectx.stroke(); }
+      ectx.fillStyle = '#08110c'; ectx.font = '9px IBM Plex Mono'; ectx.textAlign='center'; ectx.textBaseline='middle';
+      ectx.fillText(String(i+1), s.x, s.y);
+    });
+    drawSegmentHandle(pts, 'routeSegment', css('--route'));
+  }
+
+  function drawTrajectoryEdit(){
+    const pts = scenario.trajectory;
+    if(pts.length>1){
+      ectx.strokeStyle = css('--trajectory'); ectx.lineWidth=2; ectx.setLineDash([6,4]);
+      drawCurvedPolyline(ectx, pts, ew2s);
+      ectx.setLineDash([]);
+    }
+    pts.forEach((p,i)=>{
+      const s = ew2s(p.x,p.y);
+      const isSel = selected && selected.type==='trajectory' && selected.id===p.id;
+      const r = isSel?7:5.5;
+      ectx.save(); ectx.translate(s.x,s.y); ectx.rotate(Math.PI/4);
+      ectx.fillStyle = css('--trajectory'); ectx.globalAlpha = isSel?1:0.9; ectx.fillRect(-r*0.7,-r*0.7,r*1.4,r*1.4); ectx.globalAlpha=1;
+      if(isSel){ ectx.strokeStyle = css('--active'); ectx.lineWidth=2; ectx.strokeRect(-r*0.7,-r*0.7,r*1.4,r*1.4); }
+      ectx.restore();
+      ectx.fillStyle = '#08110c'; ectx.font = '9px IBM Plex Mono'; ectx.textAlign='center'; ectx.textBaseline='middle';
+      ectx.fillText(String(i+1), s.x, s.y);
+    });
+    drawSegmentHandle(pts, 'trajectorySegment', css('--trajectory'));
+  }
+
+  // Draws the draggable midpoint/control handle for the currently selected
+  // segment (route or trajectory) — a small diamond at the segment's
+  // control point, connected to the chord midpoint with a thin guide line
+  // once it's actually been bowed into a curve.
+  function drawSegmentHandle(pts, segType, color){
+    if(!selected || selected.type!==segType) return;
+    const i = selected.index;
+    if(i<0 || i+1>=pts.length) return;
+    const pA=pts[i], pB=pts[i+1], ctrl=segCtrl(pA,pB);
+    const s = ew2s(ctrl.x, ctrl.y);
+    if(pA.curved){
+      const mid = {x:(pA.x+pB.x)/2, y:(pA.y+pB.y)/2};
+      const ms = ew2s(mid.x, mid.y);
+      ectx.strokeStyle = css('--active'); ectx.setLineDash([2,3]); ectx.lineWidth=1;
+      ectx.beginPath(); ectx.moveTo(ms.x,ms.y); ectx.lineTo(s.x,s.y); ectx.stroke(); ectx.setLineDash([]);
+    }
+    ectx.save(); ectx.translate(s.x,s.y); ectx.rotate(Math.PI/4);
+    ectx.fillStyle = css('--active'); ectx.fillRect(-6,-6,12,12);
+    ectx.strokeStyle = color; ectx.lineWidth=1.5; ectx.strokeRect(-6,-6,12,12);
+    ectx.restore();
+  }
+
+  function drawObstaclesEdit(){
+    scenario.obstacles.forEach(o=>{
+      const s = ew2s(o.x,o.y);
+      const isSel = selected && selected.type==='obstacle' && selected.id===o.id;
+      const color = o.type==='dynamic' ? css('--obstacle-dynamic') : css('--obstacle-static');
+      ectx.save(); ectx.translate(s.x,s.y); ectx.rotate(-(o.heading_deg||0)*Math.PI/180);
+      const w=o.w*eView.scale, h=o.h*eView.scale;
+      ectx.fillStyle=color; ectx.globalAlpha=0.28; ectx.fillRect(-w/2,-h/2,w,h);
+      ectx.globalAlpha=1; ectx.strokeStyle=color; ectx.lineWidth=isSel?2.5:1.5; ectx.strokeRect(-w/2,-h/2,w,h);
+      if(isSel){ ectx.strokeStyle=css('--active'); ectx.lineWidth=2; ectx.setLineDash([4,3]);
+        ectx.strokeRect(-w/2-5,-h/2-5,w+10,h+10); ectx.setLineDash([]); }
+      if(o.type==='dynamic'){
+        const len = Math.max(20,(o.speed_mps||0)*eView.scale*0.6);
+        ectx.strokeStyle=color; ectx.fillStyle=color; ectx.lineWidth=2;
+        ectx.beginPath(); ectx.moveTo(0,0); ectx.lineTo(len,0); ectx.stroke();
+        ectx.beginPath(); ectx.moveTo(len,0); ectx.lineTo(len-7,-4); ectx.lineTo(len-7,4); ectx.closePath(); ectx.fill();
+      }
+      ectx.restore();
+    });
+  }
+
+  function drawVehicleEdit(){
+    if(!scenario.vehicle) return;
+    const v = scenario.vehicle; const s = ew2s(v.x,v.y);
+    const isSel = selected && selected.type==='vehicle';
+    ectx.save(); ectx.translate(s.x,s.y); ectx.rotate(-(v.heading_deg||0)*Math.PI/180);
+    const len=1.6*eView.scale, wid=0.9*eView.scale;
+    ectx.fillStyle = css('--vehicle'); ectx.globalAlpha=0.85;
+    ectx.beginPath(); ectx.moveTo(len*0.55,0); ectx.lineTo(-len*0.45,wid*0.5); ectx.lineTo(-len*0.45,-wid*0.5); ectx.closePath(); ectx.fill();
+    ectx.globalAlpha=1;
+    if(isSel){ ectx.strokeStyle=css('--active'); ectx.lineWidth=2; ectx.stroke(); }
+    ectx.restore();
+  }
+
+  // Generic circular zone renderer (start/finish), shared by editor and
+  // live-replay reference drawing.
+  function drawZoneOn(ctx, zone, w2s, scale, color, label, isSel){
+    if(!zone) return;
+    const s = w2s(zone.x, zone.y);
+    const r = zone.radius*scale;
+    ctx.save();
+    ctx.fillStyle = color; ctx.globalAlpha = 0.15;
+    ctx.beginPath(); ctx.arc(s.x,s.y,r,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = color; ctx.lineWidth = isSel?3:2; ctx.setLineDash([6,4]);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = color; ctx.font='10px IBM Plex Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(label, s.x, s.y);
+    ctx.restore();
+  }
+  function drawZonesEdit(){
+    drawZoneOn(ectx, scenario.start_zone, ew2s, eView.scale, css('--start-zone'), 'START', selected && selected.type==='startZone');
+    drawZoneOn(ectx, scenario.finish_zone, ew2s, eView.scale, css('--finish-zone'), 'FINISH', selected && selected.type==='finishZone');
+  }
+
+  function drawEditPreview(){
+    if(eDragging && eDragging.kind==='drawObstacle'){
+      const a=ew2s(eDragging.x0,eDragging.y0), b=ew2s(eMouseWorld.x,eMouseWorld.y);
+      ectx.strokeStyle = mode==='dynamic'? css('--obstacle-dynamic') : css('--obstacle-static');
+      ectx.setLineDash([4,3]); ectx.lineWidth=1.5;
+      ectx.strokeRect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));
+      ectx.setLineDash([]);
+    }
+    if(eDragging && (eDragging.kind==='vehicleHeading' || eDragging.kind==='obstacleHeading')){
+      let s;
+      if(eDragging.kind==='vehicleHeading') s = ew2s(scenario.vehicle.x, scenario.vehicle.y);
+      else { const o = findObstacle(eDragging.id); s = ew2s(o.x,o.y); }
+      ectx.strokeStyle = css('--active'); ectx.setLineDash([3,3]); ectx.lineWidth=1.5;
+      ectx.beginPath(); ectx.moveTo(s.x,s.y); const m=ew2s(eMouseWorld.x,eMouseWorld.y); ectx.lineTo(m.x,m.y); ectx.stroke();
+      ectx.setLineDash([]);
+    }
+  }
+
+  // rulers (shared visual chrome for the editor canvas)
+  const ruleTop = document.getElementById('ruleTop'), ruleLeft = document.getElementById('ruleLeft');
+  const ruleTopCanvas = document.createElement('canvas'); ruleTop.appendChild(ruleTopCanvas); ruleTopCanvas.style.width='100%'; ruleTopCanvas.style.height='100%';
+  const ruleLeftCanvas = document.createElement('canvas'); ruleLeft.appendChild(ruleLeftCanvas); ruleLeftCanvas.style.width='100%'; ruleLeftCanvas.style.height='100%';
+  function fmtNum(v){ return Math.abs(v)<0.001?'0':(Math.round(v*100)/100).toString(); }
+  function drawRulers(){
+    const r = editWrap.getBoundingClientRect();
+    const step = pickGridStepFor(eView);
+    const tr = ruleTop.getBoundingClientRect();
+    ruleTopCanvas.width = tr.width*devicePixelRatio; ruleTopCanvas.height = tr.height*devicePixelRatio;
+    const tctx = ruleTopCanvas.getContext('2d'); tctx.scale(devicePixelRatio,devicePixelRatio);
+    tctx.clearRect(0,0,tr.width,tr.height);
+    tctx.fillStyle = css('--text-3'); tctx.font='9px IBM Plex Mono'; tctx.textBaseline='middle';
+    const topLeft = es2w(0,0), botRight = es2w(r.width,0);
+    for(let x = Math.floor(topLeft.x/step)*step; x <= botRight.x; x += step){
+      const s = ew2s(x,0); tctx.fillText(fmtNum(x), s.x-24+3, tr.height/2);
+    }
+    const lr = ruleLeft.getBoundingClientRect();
+    ruleLeftCanvas.width = lr.width*devicePixelRatio; ruleLeftCanvas.height = lr.height*devicePixelRatio;
+    const lctx = ruleLeftCanvas.getContext('2d'); lctx.scale(devicePixelRatio,devicePixelRatio);
+    lctx.clearRect(0,0,lr.width,lr.height);
+    lctx.fillStyle = css('--text-3'); lctx.font='9px IBM Plex Mono';
+    lctx.save(); lctx.translate(lr.width/2, 0); lctx.rotate(-Math.PI/2);
+    const yTop = es2w(0,0).y, yBot = es2w(0,r.height).y;
+    lctx.textBaseline='middle'; lctx.textAlign='center';
+    for(let y = Math.floor(yBot/step)*step; y <= yTop; y += step){
+      const s = ew2s(0,y); lctx.fillText(fmtNum(y), -(s.y), 3);
+    }
+    lctx.restore();
+  }
+
+  function findRoute(id){ return scenario.route.find(p=>p.id===id); }
+  function findTrajectoryPoint(id){ return scenario.trajectory.find(p=>p.id===id); }
+  function findObstacle(id){ return scenario.obstacles.find(o=>o.id===id); }
+  function hitTest(wx,wy){
+    const pxTol = 9/eView.scale;
+    for(let i=scenario.route.length-1;i>=0;i--){
+      const p = scenario.route[i];
+      if(Math.hypot(p.x-wx,p.y-wy) < pxTol) return {type:'route', id:p.id};
+    }
+    for(let i=scenario.trajectory.length-1;i>=0;i--){
+      const p = scenario.trajectory[i];
+      if(Math.hypot(p.x-wx,p.y-wy) < pxTol) return {type:'trajectory', id:p.id};
+    }
+    if(scenario.vehicle && Math.hypot(scenario.vehicle.x-wx, scenario.vehicle.y-wy) < 1.2) return {type:'vehicle'};
+    if(scenario.start_zone && Math.hypot(scenario.start_zone.x-wx, scenario.start_zone.y-wy) < scenario.start_zone.radius+pxTol*0.4) return {type:'startZone'};
+    if(scenario.finish_zone && Math.hypot(scenario.finish_zone.x-wx, scenario.finish_zone.y-wy) < scenario.finish_zone.radius+pxTol*0.4) return {type:'finishZone'};
+    for(let i=scenario.obstacles.length-1;i>=0;i--){
+      const o = scenario.obstacles[i];
+      if(Math.abs(wx-o.x) < o.w/2+pxTol*0.4 && Math.abs(wy-o.y) < o.h/2+pxTol*0.4) return {type:'obstacle', id:o.id};
+    }
+    // No point/vehicle/obstacle hit — check for a segment (route checked
+    // first, then trajectory) so clicking the line itself selects it.
+    const segTol = 7/eView.scale;
+    let idx = findSegmentNear(scenario.route, wx, wy, segTol);
+    if(idx>=0) return {type:'routeSegment', index:idx};
+    idx = findSegmentNear(scenario.trajectory, wx, wy, segTol);
+    if(idx>=0) return {type:'trajectorySegment', index:idx};
+    return null;
+  }
+  // Handle-hit test for the currently selected segment only — checked
+  // before the general hitTest() so grabbing the handle takes priority
+  // over re-selecting/deselecting the segment underneath it.
+  function hitTestSegmentHandle(wx, wy){
+    if(!selected) return null;
+    const pts = selected.type==='routeSegment' ? scenario.route
+              : selected.type==='trajectorySegment' ? scenario.trajectory : null;
+    if(!pts) return null;
+    const i = selected.index;
+    if(i<0 || i+1>=pts.length) return null;
+    const ctrl = segCtrl(pts[i], pts[i+1]);
+    const tol = 10/eView.scale;
+    if(Math.hypot(ctrl.x-wx, ctrl.y-wy) < tol) return { kind: selected.type==='routeSegment' ? 'moveRouteSegmentHandle' : 'moveTrajectorySegmentHandle', index:i };
+    return null;
+  }
+
+  editCanvas.addEventListener('contextmenu', e=>e.preventDefault());
+  editCanvas.addEventListener('mousedown', (e)=>{
+    refreshEView();
+    const p = eMousePos(e); const w = es2w(p.x,p.y); eMouseWorld = w;
+    if(e.button===2 || eSpaceDown){ ePanning = { sx:p.x, sy:p.y, ox:eView.x, oy:eView.y }; editCanvas.style.cursor='grabbing'; return; }
+    if(mode==='select'){
+      const handleHit = hitTestSegmentHandle(w.x,w.y);
+      if(handleHit){
+        const pts = handleHit.kind==='moveRouteSegmentHandle' ? scenario.route : scenario.trajectory;
+        const pA = pts[handleHit.index], pB = pts[handleHit.index+1];
+        if(!pA.curved){
+          const mid = segCtrl(pA, pB); // current midpoint, before flipping curved on
+          pA.curved = true; pA.ctrl_x = mid.x; pA.ctrl_y = mid.y;
+        }
+        eDragging = handleHit;
+        drawEdit(); return;
+      }
+      const hit = hitTest(w.x,w.y); selected = hit; renderSelection();
+      if(hit && hit.type==='route') eDragging = { kind:'moveRoute', id:hit.id };
+      else if(hit && hit.type==='trajectory') eDragging = { kind:'moveTrajectory', id:hit.id };
+      else if(hit && hit.type==='obstacle') eDragging = { kind:'moveObstacle', id:hit.id };
+      else if(hit && hit.type==='vehicle') eDragging = { kind:'moveVehicle' };
+      else if(hit && hit.type==='startZone') eDragging = { kind:'moveStartZone' };
+      else if(hit && hit.type==='finishZone') eDragging = { kind:'moveFinishZone' };
+      drawEdit(); return;
+    }
+    if(mode==='route'){
+      const pt = { id:nextId(), x:esnap(w.x), y:esnap(w.y), target_speed_mps: 8 };
+      scenario.route.push(pt); selected = {type:'route', id:pt.id}; updateAll(); return;
+    }
+    if(mode==='trajectory'){
+      const pt = { id:nextId(), x:esnap(w.x), y:esnap(w.y), target_speed_mps: 8, t_s: -1 };
+      scenario.trajectory.push(pt); selected = {type:'trajectory', id:pt.id}; updateAll(); return;
+    }
+    if(mode==='static' || mode==='dynamic'){ eDragging = { kind:'drawObstacle', x0:esnap(w.x), y0:esnap(w.y), obType:mode }; return; }
+    if(mode==='vehicle'){ scenario.vehicle = { x:esnap(w.x), y:esnap(w.y), heading_deg:0 }; selected = {type:'vehicle'}; updateAll(); return; }
+    if(mode==='startZone'){ scenario.start_zone = { x:esnap(w.x), y:esnap(w.y), radius:2 }; selected = {type:'startZone'}; updateAll(); return; }
+    if(mode==='finishZone'){ scenario.finish_zone = { x:esnap(w.x), y:esnap(w.y), radius:2 }; selected = {type:'finishZone'}; updateAll(); return; }
+  });
+  window.addEventListener('mousemove',(e)=>{
+    if(!document.getElementById('editorView').classList.contains('active')) return;
+    refreshEView();
+    const p = eMousePos(e); const w = es2w(p.x,p.y); eMouseWorld = w;
+    if(ePanning){ eView.x = ePanning.ox+(p.x-ePanning.sx); eView.y = ePanning.oy+(p.y-ePanning.sy); syncEditToShared(); drawEdit(); return; }
+    if(!eDragging) return;
+    if(eDragging.kind==='moveRoute'){ const pt=findRoute(eDragging.id); pt.x=esnap(w.x); pt.y=esnap(w.y); updateAll(); }
+    else if(eDragging.kind==='moveTrajectory'){ const pt=findTrajectoryPoint(eDragging.id); pt.x=esnap(w.x); pt.y=esnap(w.y); updateAll(); }
+    else if(eDragging.kind==='moveObstacle'){ const o=findObstacle(eDragging.id); o.x=esnap(w.x); o.y=esnap(w.y); updateAll(); }
+    else if(eDragging.kind==='moveVehicle'){ scenario.vehicle.x=esnap(w.x); scenario.vehicle.y=esnap(w.y); updateAll(); }
+    else if(eDragging.kind==='moveStartZone'){ scenario.start_zone.x=esnap(w.x); scenario.start_zone.y=esnap(w.y); updateAll(); }
+    else if(eDragging.kind==='moveFinishZone'){ scenario.finish_zone.x=esnap(w.x); scenario.finish_zone.y=esnap(w.y); updateAll(); }
+    else if(eDragging.kind==='moveRouteSegmentHandle'){ const pA=scenario.route[eDragging.index]; pA.ctrl_x=w.x; pA.ctrl_y=w.y; drawEdit(); }
+    else if(eDragging.kind==='moveTrajectorySegmentHandle'){ const pA=scenario.trajectory[eDragging.index]; pA.ctrl_x=w.x; pA.ctrl_y=w.y; drawEdit(); }
+    else drawEdit();
+  });
+  window.addEventListener('mouseup',(e)=>{
+    if(ePanning){ ePanning=null; editCanvas.style.cursor='crosshair'; return; }
+    if(!eDragging) return;
+    if(eDragging.kind==='drawObstacle'){
+      const x0=eDragging.x0, y0=eDragging.y0, x1=esnap(eMouseWorld.x), y1=esnap(eMouseWorld.y);
+      const w=Math.abs(x1-x0), h=Math.abs(y1-y0);
+      if(w>0.3 && h>0.3){
+        const o = { id:nextId(), type: eDragging.obType==='dynamic'?'dynamic':'static', shape:'rect',
+          x:(x0+x1)/2, y:(y0+y1)/2, w, h, heading_deg:0, speed_mps: eDragging.obType==='dynamic'?3:0 };
+        scenario.obstacles.push(o); selected = {type:'obstacle', id:o.id};
+      }
+      updateAll();
+    } else if(eDragging.kind==='vehicleHeading'){
+      const dx=eMouseWorld.x-scenario.vehicle.x, dy=eMouseWorld.y-scenario.vehicle.y;
+      scenario.vehicle.heading_deg = Math.round(Math.atan2(dy,dx)*180/Math.PI); updateAll();
+    } else if(eDragging.kind==='obstacleHeading'){
+      const o=findObstacle(eDragging.id); const dx=eMouseWorld.x-o.x, dy=eMouseWorld.y-o.y;
+      o.heading_deg = Math.round(Math.atan2(dy,dx)*180/Math.PI); updateAll();
+    } else if(eDragging.kind==='moveRouteSegmentHandle' || eDragging.kind==='moveTrajectorySegmentHandle'){
+      updateAll();
+    }
+    eDragging = null;
+  });
+  editCanvas.addEventListener('wheel',(e)=>{
+    if(!document.getElementById('editorView').classList.contains('active')) return;
+    e.preventDefault();
+    refreshEView();
+    const p = eMousePos(e); const before = es2w(p.x,p.y);
+    eView.scale = Math.min(200, Math.max(3, eView.scale*Math.pow(1.0015,-e.deltaY)));
+    const after = es2w(p.x,p.y);
+    eView.x += (after.x-before.x)*eView.scale; eView.y -= (after.y-before.y)*eView.scale;
+    syncEditToShared();
+    drawEdit();
+  }, {passive:false});
+  editCanvas.addEventListener('dblclick',(e)=>{
+    refreshEView();
+    const p = eMousePos(e); const w = es2w(p.x,p.y);
+    const hit = hitTest(w.x,w.y);
+    if(hit && hit.type==='vehicle') eDragging = {kind:'vehicleHeading'};
+    else if(hit && hit.type==='obstacle') eDragging = {kind:'obstacleHeading', id:hit.id};
+  });
+  window.addEventListener('keydown',(e)=>{
+    if(!document.getElementById('editorView').classList.contains('active')) return;
+    if(e.code==='Space'){ eSpaceDown=true; editCanvas.style.cursor='grab'; }
+    if((e.key==='Delete' || e.key==='Backspace') && selected && document.activeElement.tagName!=='INPUT') deleteSelected();
+  });
+  window.addEventListener('keyup',(e)=>{ if(e.code==='Space'){ eSpaceDown=false; editCanvas.style.cursor='crosshair'; } });
+
+  function deleteSelected(){
+    if(!selected) return;
+    if(selected.type==='route') scenario.route = scenario.route.filter(p=>p.id!==selected.id);
+    if(selected.type==='trajectory') scenario.trajectory = scenario.trajectory.filter(p=>p.id!==selected.id);
+    if(selected.type==='obstacle') scenario.obstacles = scenario.obstacles.filter(o=>o.id!==selected.id);
+    if(selected.type==='vehicle') scenario.vehicle = null;
+    if(selected.type==='startZone') scenario.start_zone = null;
+    if(selected.type==='finishZone') scenario.finish_zone = null;
+    selected = null; updateAll();
+  }
+
+  document.getElementById('modeSeg').addEventListener('click',(e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    mode = btn.dataset.mode;
+    document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('active', b===btn));
+    editCanvas.style.cursor = mode==='select' ? 'default' : 'crosshair';
+  });
+  document.getElementById('snapBtn').addEventListener('click',(e)=>{
+    snap = snap>0 ? 0 : 1;
+    e.target.classList.toggle('on', snap>0);
+    e.target.textContent = snap>0 ? 'Snap 1m' : 'Snap off';
+  });
+  document.getElementById('vcGear').addEventListener('change', e=>{ scenario.vehicle_config.gear = e.target.value; });
+  document.getElementById('vcMaxSpeed').addEventListener('input', e=>{ scenario.vehicle_config.max_speed_mps = Math.max(0, parseFloat(e.target.value)||0); });
+  document.getElementById('vcMaxSteer').addEventListener('input', e=>{ scenario.vehicle_config.max_steer_deg = Math.min(80, Math.max(0, parseFloat(e.target.value)||0)); });
+  document.getElementById('vcMaxAccel').addEventListener('input', e=>{ scenario.vehicle_config.max_accel_mps2 = Math.max(0, parseFloat(e.target.value)||0); });
+  document.getElementById('vcMaxDecel').addEventListener('input', e=>{ scenario.vehicle_config.max_decel_mps2 = Math.min(0, parseFloat(e.target.value)||0); });
+  document.getElementById('vcWheelbase').addEventListener('input', e=>{ scenario.vehicle_config.wheelbase_m = Math.max(0.5, parseFloat(e.target.value)||2.7); });
+
+  function resetMockingjayState(){
+    // A recording (and its preview trace) belongs to the map it was
+    // captured on — a new/imported scenario invalidates it client-side.
+    // The server keeps its own copy until the next "Record", but hiding
+    // the Replay buttons here prevents replaying it against the wrong map.
+    mockingjayHasRecording = false;
+    mjPreviewForward = []; mjPreviewReverse = [];
+    updateMockingjayButtons();
+  }
+  document.getElementById('newBtn').addEventListener('click',()=>{
+    if(!confirm('Clear the current scenario and start a new one?')) return;
+    scenario = freshScenario(); document.getElementById('scenarioName').value = scenario.meta.name;
+    syncVehicleConfigUI();
+    selected = null; updateAll(); resetMockingjayState();
+  });
+  document.getElementById('exportBtn').addEventListener('click',()=>{
+    scenario.meta.name = document.getElementById('scenarioName').value || 'unnamed_scenario';
+    const blob = new Blob([JSON.stringify(scenario,null,2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = scenario.meta.name.replace(/\s+/g,'_') + '.json'; a.click();
+  });
+  document.getElementById('loadBtn').addEventListener('click',()=> document.getElementById('fileInput').click());
+  document.getElementById('fileInput').addEventListener('change',(e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const data = JSON.parse(reader.result);
+        scenario = normalizeScenario(data);
+        document.getElementById('scenarioName').value = scenario.meta.name || 'unnamed_scenario';
+        syncVehicleConfigUI();
+        selected = null; updateAll(); resetMockingjayState();
+      }catch(err){ alert('Could not parse that file as scenario JSON: '+err.message); }
+    };
+    reader.readAsText(file); e.target.value = '';
+  });
+  function normalizeScenario(data){
+    const s = freshScenario();
+    if(data.meta) s.meta = Object.assign(s.meta, data.meta);
+    if(data.vehicle) s.vehicle = data.vehicle;
+    if(data.vehicle_config) s.vehicle_config = Object.assign(s.vehicle_config, data.vehicle_config);
+    if(data.start_zone) s.start_zone = {...data.start_zone};
+    if(data.finish_zone) s.finish_zone = {...data.finish_zone};
+    if(Array.isArray(data.route)) s.route = data.route.map(p=>({...p, id: p.id ?? nextId()}));
+    if(Array.isArray(data.trajectory)) s.trajectory = data.trajectory.map(p=>({...p, id: p.id ?? nextId(), t_s: p.t_s ?? -1}));
+    if(Array.isArray(data.obstacles)) s.obstacles = data.obstacles.map(o=>({...o, id: o.id ?? nextId()}));
+    idCounter = 1 + Math.max(0, ...s.route.map(p=>p.id||0), ...s.trajectory.map(p=>p.id||0), ...s.obstacles.map(o=>o.id||0));
+    return s;
+  }
+  function syncVehicleConfigUI(){
+    const vc = scenario.vehicle_config;
+    document.getElementById('vcGear').value = vc.gear;
+    document.getElementById('vcMaxSpeed').value = vc.max_speed_mps;
+    document.getElementById('vcMaxSteer').value = vc.max_steer_deg;
+    document.getElementById('vcMaxAccel').value = vc.max_accel_mps2;
+    document.getElementById('vcMaxDecel').value = vc.max_decel_mps2;
+    document.getElementById('vcWheelbase').value = vc.wheelbase_m;
+  }
+
+  function renderSelection(){
+    const card = document.getElementById('selCard');
+    if(!selected){ card.innerHTML = '<div class="empty">Nothing selected. Click an item on the canvas to edit its properties, or pick a tool above to add one.</div>'; return; }
+    if(selected.type==='route'){
+      const p = findRoute(selected.id); if(!p){ selected=null; return renderSelection(); }
+      const idx = scenario.route.findIndex(x=>x.id===p.id);
+      card.innerHTML = `
+        <div class="row"><label>Waypoint</label><span class="count">#${idx+1}</span></div>
+        <div class="row"><label>x (m)</label><input type="number" step="0.1" id="fx" value="${p.x.toFixed(2)}"></div>
+        <div class="row"><label>y (m)</label><input type="number" step="0.1" id="fy" value="${p.y.toFixed(2)}"></div>
+        <div class="row"><label>Target speed (m/s)</label><input type="number" step="0.5" id="fspeed" value="${p.target_speed_mps}"></div>
+        <div class="row"><button class="btn-full btn-danger" id="delBtn">Delete waypoint</button></div>`;
+      wire(['fx','fy','fspeed'], ()=>{
+        p.x = parseFloat(document.getElementById('fx').value)||0; p.y = parseFloat(document.getElementById('fy').value)||0;
+        p.target_speed_mps = parseFloat(document.getElementById('fspeed').value)||0; updateAll(true);
+      });
+    } else if(selected.type==='trajectory'){
+      const p = findTrajectoryPoint(selected.id); if(!p){ selected=null; return renderSelection(); }
+      const idx = scenario.trajectory.findIndex(x=>x.id===p.id);
+      card.innerHTML = `
+        <div class="row"><label>Trajectory point</label><span class="count">#${idx+1}</span></div>
+        <div class="row"><label>x (m)</label><input type="number" step="0.1" id="fx" value="${p.x.toFixed(2)}"></div>
+        <div class="row"><label>y (m)</label><input type="number" step="0.1" id="fy" value="${p.y.toFixed(2)}"></div>
+        <div class="row"><label>Target speed (m/s)</label><input type="number" step="0.5" id="fspeed" value="${p.target_speed_mps}"></div>
+        <div class="row"><label>Timestamp (s, -1=auto)</label><input type="number" step="0.1" id="ft" value="${p.t_s}"></div>
+        <div class="row"><button class="btn-full btn-danger" id="delBtn">Delete point</button></div>`;
+      wire(['fx','fy','fspeed','ft'], ()=>{
+        p.x = parseFloat(document.getElementById('fx').value)||0; p.y = parseFloat(document.getElementById('fy').value)||0;
+        p.target_speed_mps = parseFloat(document.getElementById('fspeed').value)||0;
+        p.t_s = parseFloat(document.getElementById('ft').value); if(isNaN(p.t_s)) p.t_s = -1;
+        updateAll(true);
+      });
+    } else if(selected.type==='obstacle'){
+      const o = findObstacle(selected.id); if(!o){ selected=null; return renderSelection(); }
+      card.innerHTML = `
+        <div class="row"><label>Type</label><select id="ftype">
+          <option value="static" ${o.type==='static'?'selected':''}>Static</option>
+          <option value="dynamic" ${o.type==='dynamic'?'selected':''}>Dynamic</option></select></div>
+        <div class="row"><label>x (m)</label><input type="number" step="0.1" id="fx" value="${o.x.toFixed(2)}"></div>
+        <div class="row"><label>y (m)</label><input type="number" step="0.1" id="fy" value="${o.y.toFixed(2)}"></div>
+        <div class="row"><label>Width (m)</label><input type="number" step="0.1" id="fw" value="${o.w}"></div>
+        <div class="row"><label>Length (m)</label><input type="number" step="0.1" id="fh" value="${o.h}"></div>
+        <div class="row"><label>Heading (deg)</label><input type="number" step="1" id="fheading" value="${o.heading_deg||0}"></div>
+        <div class="row" id="speedRow" style="${o.type==='dynamic'?'':'display:none'}"><label>Speed (m/s)</label><input type="number" step="0.5" id="fspeed" value="${o.speed_mps||0}"></div>
+        <div class="row"><button class="btn-full btn-danger" id="delBtn">Delete obstacle</button></div>`;
+      wire(['fx','fy','fw','fh','fheading','fspeed'], ()=>{
+        o.x = parseFloat(document.getElementById('fx').value)||0; o.y = parseFloat(document.getElementById('fy').value)||0;
+        o.w = parseFloat(document.getElementById('fw').value)||0.1; o.h = parseFloat(document.getElementById('fh').value)||0.1;
+        o.heading_deg = parseFloat(document.getElementById('fheading').value)||0;
+        const sInput = document.getElementById('fspeed'); if(sInput) o.speed_mps = parseFloat(sInput.value)||0;
+        updateAll(true);
+      });
+      document.getElementById('ftype').addEventListener('change',(e)=>{
+        o.type = e.target.value; document.getElementById('speedRow').style.display = o.type==='dynamic' ? '' : 'none'; updateAll();
+      });
+    } else if(selected.type==='vehicle'){
+      const v = scenario.vehicle;
+      card.innerHTML = `
+        <div class="row"><label>x (m)</label><input type="number" step="0.1" id="fx" value="${v.x.toFixed(2)}"></div>
+        <div class="row"><label>y (m)</label><input type="number" step="0.1" id="fy" value="${v.y.toFixed(2)}"></div>
+        <div class="row"><label>Heading (deg)</label><input type="number" step="1" id="fheading" value="${v.heading_deg||0}"></div>
+        <div class="row"><button class="btn-full btn-danger" id="delBtn">Remove vehicle</button></div>`;
+      wire(['fx','fy','fheading'], ()=>{
+        v.x = parseFloat(document.getElementById('fx').value)||0; v.y = parseFloat(document.getElementById('fy').value)||0;
+        v.heading_deg = parseFloat(document.getElementById('fheading').value)||0; updateAll(true);
+      });
+    } else if(selected.type==='routeSegment' || selected.type==='trajectorySegment'){
+      const pts = selected.type==='routeSegment' ? scenario.route : scenario.trajectory;
+      const i = selected.index;
+      if(i<0 || i+1>=pts.length){ selected=null; return renderSelection(); }
+      const pA = pts[i];
+      const label = selected.type==='routeSegment' ? 'Route segment' : 'Trajectory segment';
+      card.innerHTML = `
+        <div class="row"><label>${label}</label><span class="count">#${i+1}–#${i+2}</span></div>
+        <div class="row"><label>Shape</label><span class="count">${pA.curved ? 'Curved' : 'Straight'}</span></div>
+        <div class="empty" style="margin:8px 0;">Drag the handle on the segment to bow it into a curve for smoother turns.</div>
+        <div class="row"><button class="btn-full" id="straightenBtn" ${pA.curved?'':'disabled'}>Straighten segment</button></div>`;
+      document.getElementById('straightenBtn').addEventListener('click', ()=>{
+        pA.curved = false; updateAll(true);
+      });
+    } else if(selected.type==='startZone' || selected.type==='finishZone'){
+      const isStart = selected.type==='startZone';
+      const z = isStart ? scenario.start_zone : scenario.finish_zone;
+      card.innerHTML = `
+        <div class="row"><label>${isStart?'Start':'Finish'} zone</label></div>
+        <div class="row"><label>x (m)</label><input type="number" step="0.1" id="fx" value="${z.x.toFixed(2)}"></div>
+        <div class="row"><label>y (m)</label><input type="number" step="0.1" id="fy" value="${z.y.toFixed(2)}"></div>
+        <div class="row"><label>Radius (m)</label><input type="number" step="0.1" min="0.2" id="fradius" value="${z.radius}"></div>
+        <div class="row"><button class="btn-full btn-danger" id="delBtn">Remove ${isStart?'start':'finish'} zone</button></div>`;
+      wire(['fx','fy','fradius'], ()=>{
+        z.x = parseFloat(document.getElementById('fx').value)||0; z.y = parseFloat(document.getElementById('fy').value)||0;
+        z.radius = Math.max(0.2, parseFloat(document.getElementById('fradius').value)||2); updateAll(true);
+      });
+    }
+    const delBtn = document.getElementById('delBtn'); if(delBtn) delBtn.addEventListener('click', deleteSelected);
+  }
+  function wire(ids, fn){ ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', fn); }); }
+
+  function updateStats(){
+    document.getElementById('cRoute').textContent = scenario.route.length;
+    document.getElementById('cTrajectory').textContent = scenario.trajectory.length;
+    document.getElementById('cStatic').textContent = scenario.obstacles.filter(o=>o.type==='static').length;
+    document.getElementById('cDynamic').textContent = scenario.obstacles.filter(o=>o.type==='dynamic').length;
+    document.getElementById('cVehicle').textContent = scenario.vehicle ? `${scenario.vehicle.x.toFixed(1)}, ${scenario.vehicle.y.toFixed(1)} m` : 'not set';
+    document.getElementById('cStartZone').textContent = scenario.start_zone ? 'set' : 'not set';
+    document.getElementById('cFinishZone').textContent = scenario.finish_zone ? 'set' : 'not set';
+    updateRunButton();
+  }
+  function updateAll(keepSelPanel){
+    updateStats(); drawEdit(); if(!keepSelPanel) renderSelection();
+    if(document.getElementById('liveView').classList.contains('active')) drawLive(); // reference route may have changed
+  }
+
+  // ============================================================
+  // LIVE REPLAY TAB
+  // ============================================================
+  const liveCanvas = document.getElementById('liveCanvas');
+  const lctx2 = liveCanvas.getContext('2d');
+  const liveWrap = document.getElementById('canvasWrapLive');
+  let lView = { x:0, y:0, scale: sharedView.scale };
+  let liveVehicle=null, liveObstacles=[], liveTarget=null, liveTrajectory=[];
+  let liveTrail = [];
+  // Ghost-trace preview of where Replay Forward / Replay Reverse would take
+  // the vehicle from wherever it currently is — sent by the server as
+  // "mockingjay_preview" whenever a recording exists and the vehicle is
+  // idle (see handleServerMessage).
+  let mjPreviewForward = [], mjPreviewReverse = [];
+  let lPanning = null;
+  const liveTBuf=[], liveSpeedBuf=[], liveSteerBuf=[], liveAccelBuf=[];
+  const MAX_LIVE_POINTS = 600;
+
+  function refreshLView(){
+    const r = liveWrap.getBoundingClientRect();
+    lView.scale = sharedView.scale;
+    lView.x = r.width/2 - sharedView.cx * sharedView.scale;
+    lView.y = r.height/2 + sharedView.cy * sharedView.scale;
+  }
+  function syncLiveToShared(){
+    const r = liveWrap.getBoundingClientRect();
+    sharedView.scale = lView.scale;
+    sharedView.cx = (r.width/2 - lView.x) / lView.scale;
+    sharedView.cy = -(r.height/2 - lView.y) / lView.scale;
+  }
+
+  function resizeLive(){
+    const r = liveWrap.getBoundingClientRect();
+    liveCanvas.width = r.width*devicePixelRatio; liveCanvas.height = r.height*devicePixelRatio;
+    liveCanvas.style.width = r.width+'px'; liveCanvas.style.height = r.height+'px';
+    drawLive();
+  }
+  window.addEventListener('resize', resizeLive);
+  function lw2s(x,y){ return { x: lView.x + x*lView.scale, y: lView.y - y*lView.scale }; }
+  function ls2w(sx,sy){ return { x: (sx-lView.x)/lView.scale, y: -(sy-lView.y)/lView.scale }; }
+
+  liveCanvas.addEventListener('wheel', e=>{
+    e.preventDefault();
+    refreshLView();
+    const r = liveCanvas.getBoundingClientRect(); const p = { x:e.clientX-r.left, y:e.clientY-r.top };
+    const before = ls2w(p.x,p.y);
+    lView.scale = Math.min(200, Math.max(3, lView.scale*Math.pow(1.0015,-e.deltaY)));
+    const after = ls2w(p.x,p.y);
+    lView.x += (after.x-before.x)*lView.scale; lView.y -= (after.y-before.y)*lView.scale;
+    syncLiveToShared();
+    drawLive();
+  }, {passive:false});
+  liveCanvas.addEventListener('contextmenu', e=>e.preventDefault());
+  liveCanvas.addEventListener('mousedown', e=>{
+    refreshLView();
+    const r = liveCanvas.getBoundingClientRect();
+    lPanning = { sx:e.clientX-r.left, sy:e.clientY-r.top, ox:lView.x, oy:lView.y };
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!lPanning) return;
+    const r = liveCanvas.getBoundingClientRect();
+    lView.x = lPanning.ox + (e.clientX-r.left-lPanning.sx); lView.y = lPanning.oy + (e.clientY-r.top-lPanning.sy);
+    syncLiveToShared();
+    drawLive();
+  });
+  window.addEventListener('mouseup', ()=> lPanning=null);
+  document.getElementById('clearTrailBtn').addEventListener('click', ()=>{ liveTrail=[]; drawLive(); });
+
+  function drawLive(){
+    refreshLView();
+    const r = liveWrap.getBoundingClientRect();
+    lctx2.save(); lctx2.scale(devicePixelRatio, devicePixelRatio);
+    lctx2.clearRect(0,0,r.width,r.height);
+    lctx2.fillStyle = css('--bg-canvas'); lctx2.fillRect(0,0,r.width,r.height);
+    drawGridOn(lctx2, r, lView, lw2s, ls2w);
+
+    // faint reference route straight from the in-memory scenario — no import needed
+    const pts = scenario.route||[];
+    if(pts.length>1){
+      lctx2.strokeStyle = css('--route'); lctx2.globalAlpha=0.35; lctx2.lineWidth=2;
+      drawCurvedPolyline(lctx2, pts, lw2s);
+      lctx2.globalAlpha=1;
+    }
+    const authoredPts = scenario.trajectory||[];
+    if(authoredPts.length>1){
+      lctx2.strokeStyle = css('--trajectory'); lctx2.globalAlpha=0.4; lctx2.lineWidth=2; lctx2.setLineDash([6,4]);
+      drawCurvedPolyline(lctx2, authoredPts, lw2s);
+      lctx2.setLineDash([]); lctx2.globalAlpha=1;
+    }
+    lctx2.globalAlpha=0.6;
+    drawZoneOn(lctx2, scenario.start_zone, lw2s, lView.scale, css('--start-zone'), 'START', false);
+    drawZoneOn(lctx2, scenario.finish_zone, lw2s, lView.scale, css('--finish-zone'), 'FINISH', false);
+    lctx2.globalAlpha=1;
+    (scenario.obstacles||[]).forEach(o=>{
+      const s = lw2s(o.x,o.y);
+      const color = o.type==='dynamic' ? css('--obstacle-dynamic') : css('--obstacle-static');
+      lctx2.save(); lctx2.translate(s.x,s.y); lctx2.rotate(-(o.heading_deg||0)*Math.PI/180);
+      lctx2.globalAlpha=0.15; lctx2.fillStyle=color; lctx2.fillRect(-o.w*lView.scale/2,-o.h*lView.scale/2,o.w*lView.scale,o.h*lView.scale);
+      lctx2.globalAlpha=1; lctx2.restore();
+    });
+
+    if(liveTrajectory.length>1){
+      lctx2.strokeStyle = css('--active'); lctx2.globalAlpha=0.8; lctx2.lineWidth=2;
+      lctx2.beginPath(); liveTrajectory.forEach((p,i)=>{ const s=lw2s(p.x,p.y); i===0?lctx2.moveTo(s.x,s.y):lctx2.lineTo(s.x,s.y); }); lctx2.stroke();
+      lctx2.globalAlpha=1;
+    }
+    function drawPreviewLine(pts, color){
+      if(pts.length<2) return;
+      lctx2.strokeStyle = color; lctx2.globalAlpha=0.55; lctx2.lineWidth=2.5; lctx2.setLineDash([7,5]);
+      lctx2.beginPath(); pts.forEach((p,i)=>{ const s=lw2s(p.x,p.y); i===0?lctx2.moveTo(s.x,s.y):lctx2.lineTo(s.x,s.y); }); lctx2.stroke();
+      lctx2.setLineDash([]); lctx2.globalAlpha=1;
+    }
+    drawPreviewLine(mjPreviewForward, css('--mj-preview-fwd'));
+    drawPreviewLine(mjPreviewReverse, css('--mj-preview-rev'));
+    liveObstacles.forEach(o=>{
+      const s = lw2s(o.x,o.y);
+      const color = o.type==='dynamic' ? css('--obstacle-dynamic') : css('--obstacle-static');
+      lctx2.save(); lctx2.translate(s.x,s.y); lctx2.rotate(-(o.heading_deg||0)*Math.PI/180);
+      lctx2.fillStyle=color; lctx2.globalAlpha=0.3; lctx2.fillRect(-o.w*lView.scale/2,-o.h*lView.scale/2,o.w*lView.scale,o.h*lView.scale);
+      lctx2.globalAlpha=1; lctx2.strokeStyle=color; lctx2.lineWidth=1.5;
+      lctx2.strokeRect(-o.w*lView.scale/2,-o.h*lView.scale/2,o.w*lView.scale,o.h*lView.scale);
+      lctx2.restore();
+    });
+    if(liveTarget){
+      const s = lw2s(liveTarget.x, liveTarget.y);
+      lctx2.strokeStyle = css('--active'); lctx2.lineWidth=1.5; lctx2.setLineDash([3,3]);
+      lctx2.beginPath(); lctx2.arc(s.x,s.y,7,0,Math.PI*2); lctx2.stroke(); lctx2.setLineDash([]);
+    }
+    if(liveVehicle){
+      const s = lw2s(liveVehicle.x, liveVehicle.y);
+      lctx2.save(); lctx2.translate(s.x,s.y); lctx2.rotate(-(liveVehicle.heading_deg||0)*Math.PI/180);
+      const len=1.6*lView.scale, wid=0.9*lView.scale;
+      lctx2.fillStyle = css('--vehicle');
+      lctx2.beginPath(); lctx2.moveTo(len*0.55,0); lctx2.lineTo(-len*0.45,wid*0.5); lctx2.lineTo(-len*0.45,-wid*0.5); lctx2.closePath(); lctx2.fill();
+      lctx2.restore();
+    }
+    if(liveTrail.length>1){
+      lctx2.strokeStyle = css('--vehicle'); lctx2.globalAlpha=0.5; lctx2.lineWidth=1.5;
+      lctx2.beginPath(); liveTrail.forEach((p,i)=>{ const s=lw2s(p.x,p.y); i===0?lctx2.moveTo(s.x,s.y):lctx2.lineTo(s.x,s.y); }); lctx2.stroke();
+      lctx2.globalAlpha=1;
+    }
+    lctx2.restore();
+  }
+
+  let liveCharts = null;
+  function initLiveCharts(){
+    liveCharts = {
+      speed: new MiniChart('chartSpeed', {title:'speed (m/s)', series:[{color:'#7ee787'}]}),
+      steer: new MiniChart('chartSteer', {title:'steering (deg)', series:[{color:'#5b9dff'}]}),
+      accel: new MiniChart('chartAccel', {title:'accel (m/s²)', series:[{color:'#f2a154'}]})
+    };
+  }
+  let chartsReady = false;
+  function ensureLiveCharts(){
+    if (chartsReady) return;
+    try { initLiveCharts(); chartsReady = true; }
+    catch(e){ console.error('[sim-ground] chart init failed (will retry next tick):', e); }
+  }
+
+  function pushLiveTick(msg){
+    liveVehicle = msg.vehicle; liveObstacles = msg.obstacles||[]; liveTarget = msg.target; liveTrajectory = msg.trajectory||[];
+    liveTrail.push({x:msg.vehicle.x, y:msg.vehicle.y});
+    if(liveTrail.length>2000) liveTrail.shift();
+    document.getElementById('hT').textContent = msg.t.toFixed(2)+' s';
+    document.getElementById('hGear').textContent = (msg.vehicle.gear||'—').toUpperCase();
+    document.getElementById('hSpeed').textContent = msg.vehicle.speed_mps.toFixed(2)+' m/s';
+    document.getElementById('hSteer').textContent = msg.control.steering_deg.toFixed(1)+'°';
+    document.getElementById('hAccel').textContent = msg.control.accel_mps2.toFixed(2)+' m/s²';
+    document.getElementById('hRoute').textContent = msg.finished_by_zone ? 'finish zone reached' : (msg.route_finished ? 'finishing' : 'running');
+
+    liveTBuf.push(msg.t); liveSpeedBuf.push(msg.vehicle.speed_mps);
+    liveSteerBuf.push(msg.control.steering_deg); liveAccelBuf.push(msg.control.accel_mps2);
+    if(liveTBuf.length>MAX_LIVE_POINTS){ liveTBuf.shift(); liveSpeedBuf.shift(); liveSteerBuf.shift(); liveAccelBuf.shift(); }
+
+    // Canvas redraw is the priority — always happens, independent of charts.
+    drawLive();
+
+    ensureLiveCharts();
+    try {
+      if(liveCharts){
+        liveCharts.speed.setData([{x:liveTBuf, y:liveSpeedBuf}]);
+        liveCharts.steer.setData([{x:liveTBuf, y:liveSteerBuf}]);
+        liveCharts.accel.setData([{x:liveTBuf, y:liveAccelBuf}]);
+      }
+    } catch(e){ console.error('[sim-ground] chart update failed:', e); }
+  }
+
+  // ============================================================
+  // ANALYSIS TAB
+  // ============================================================
+  document.getElementById('analyzeSessionBtn').addEventListener('click', ()=>{
+    if(!sessionTicks || sessionTicks.t.length===0){ alert('No run recorded in this session yet — run a scenario first.'); return; }
+    renderPostRun(sessionTicks, sessionScenarioName);
+  });
+  document.getElementById('csvBtnTrigger').addEventListener('click', ()=> document.getElementById('csvInput').click());
+  document.getElementById('csvInput').addEventListener('change', e=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=> renderPostRun(parseCsv(reader.result), file.name);
+    reader.readAsText(file);
+  });
+
+  const CSV_TO_CANONICAL = {
+    steering_request_deg: 'steering_deg',
+    acceleration_request_mps2: 'accel_mps2'
+  };
+  function parseCsv(text){
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h=>h.trim());
+    const cols = {};
+    headers.forEach(h=> cols[CSV_TO_CANONICAL[h]||h] = []);
+    for(let i=1;i<lines.length;i++){
+      const parts = lines[i].split(',');
+      if(parts.length !== headers.length) continue;
+      headers.forEach((h,j)=> cols[CSV_TO_CANONICAL[h]||h].push(parseFloat(parts[j])));
+    }
+    return cols;
+  }
+
+  function renderPostRun(cols, label){
+    document.getElementById('dropHint').textContent = (label?('"'+label+'" — '):'') + cols.t.length+' ticks, '
+      + cols.t[cols.t.length-1].toFixed(1)+'s.';
+    try {
+      new MiniChart('pTrajectory', {title:'Trajectory (m)', series:[
+        {color:'#7ee787'}, {color:'#5b9dff', mode:'markers'}
+      ]}).setEqualAspect(true).setData([
+        {x:cols.vehicle_x, y:cols.vehicle_y},
+        {x:cols.target_x, y:cols.target_y}
+      ]);
+
+      new MiniChart('pSpeed', {title:'Speed vs time — actual (green) / target (blue)', series:[
+        {color:'#7ee787'}, {color:'#5b9dff', width:1.5, dash:[4,3]}
+      ]}).setData([
+        {x:cols.t, y:cols.vehicle_speed_mps},
+        {x:cols.t, y:cols.target_speed_mps}
+      ]);
+
+      new MiniChart('pSteer', {title:'Steering vs time (deg)', series:[{color:'#5b9dff'}]})
+        .setData([{x:cols.t, y:cols.steering_deg}]);
+
+      new MiniChart('pAccel', {title:'Accel vs time (m/s²)', series:[{color:'#f2a154'}]})
+        .setData([{x:cols.t, y:cols.accel_mps2}]);
+    } catch(e){
+      console.error('[sim-ground] analysis chart render failed:', e);
+      document.getElementById('dropHint').textContent = 'Chart rendering failed — see browser console for details.';
+    }
+  }
+
+  // ---------- init ----------
+  // getBoundingClientRect() at initial script execution can occasionally
+  // race the browser's first layout/paint pass (webfont swap, grid
+  // reflow, etc.), leaving the canvas sized 0x0 until something else
+  // forces a resize — which is why switching tabs "fixed" it before.
+  // ResizeObserver re-measures whenever the wrap's actual box changes,
+  // including that first settle, so it's correct without needing a
+  // manual nudge. Wrapped in try/catch so nothing here can ever again
+  // silently abort the rest of this script's initial run.
+  try {
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(()=> resizeEdit()).observe(editWrap);
+      new ResizeObserver(()=> resizeLive()).observe(liveWrap);
+    }
+    resizeEdit(); resizeLive(); renderSelection(); updateAll(); syncVehicleConfigUI();
+  } catch(e){
+    console.error('[sim-ground] init failed:', e);
+  }
+})();
+</script>
+</body>
+</html>
