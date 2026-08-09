@@ -1,10 +1,7 @@
 // sim_loop.hpp — runs one scenario to completion through the mocked
 // Planning -> IControlManager -> vehicle model pipeline, streaming ticks
-// over WebSocket and logging to CSV.
-//
-// To use your real control stack: implement IControlManager (see
-// control_interface.hpp) wrapping your actual Executor/ControlManager, and
-// swap the ControlManagerStub instantiation in sim_loop.cpp for it.
+// ver WebSocket and logging to CSV.
+
 #pragma once
 #include <atomic>
 #include <string>
