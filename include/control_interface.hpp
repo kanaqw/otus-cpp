@@ -1,18 +1,11 @@
 // control_interface.hpp
 //
-// This defines the seam between the sim harness and your real control stack,
-// matching your ControlManager's actual signature:
+// This defines the seam between the sim harness and real control stack,
+// matching ControlManager's actual signature:
 //
 //   step(vehicle_position, trajectory) -> { acceleration_request, steering_request, error }
 //
 // `trajectory` is a sequence of points the vehicle is meant to move along
-// (produced by MockPlanner today, your real Planning module later). To plug
-// in your real stack: implement IControlManager with a class that wraps your
-// actual Executor/ControlManager, translating VehicleState/Trajectory into
-// whatever your real message types are, and translating your subsystems'
-// Action/Error outputs into ControlOutput. Everything else in this project
-// (main.cpp, vehicle model, logging, replay) is agnostic to which
-// implementation is plugged in here.
 #pragma once
 #include <vector>
 #include <string>
@@ -45,9 +38,6 @@ struct ControlOutput {
     bool error = false;
     std::string error_message;
 
-    // Optional, for logging/visualization only: which trajectory point this
-    // step actually aimed at. Real implementations can leave valid=false —
-    // main.cpp falls back to trajectory.front() for the CSV/replay target.
     bool debug_target_valid = false;
     double debug_target_x = 0.0, debug_target_y = 0.0, debug_target_speed_mps = 0.0;
 };
@@ -59,11 +49,8 @@ public:
                                 const Trajectory& trajectory) = 0;
 };
 
-// ---- Stub implementation: pure-pursuit steering + a P speed controller. ----
 // Picks the trajectory point nearest to (but not under) a fixed lookahead
-// distance and steers/accelerates toward it. Replace this class with your
-// real ControlManager adapter; keep the interface so the rest of the harness
-// doesn't change.
+// distance and steers/accelerates toward it. 
 class ControlManagerStub : public IControlManager {
 public:
     explicit ControlManagerStub(double lookahead_m = 4.0, double wheelbase_m = 2.7)
