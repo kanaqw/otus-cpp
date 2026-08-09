@@ -1,13 +1,4 @@
 // teleop_input.hpp — "Mockingjay": raw driver-input record & replay.
-//
-// This defines the seam for wherever raw driver commands (pedal, steering
-// wheel, gear) come from — mirrors the IControlManager seam in
-// control_interface.hpp. Today the only implementation is
-// LiveKeyboardSource, fed by WASD + gear keys relayed from the browser over
-// the WebSocket (see web/sim-ground.html and main.cpp's "teleop_input"
-// message). Later this becomes a ROS2 subscriber node holding the latest
-// message off a real driver-input topic — same RawInputFrame shape, same
-// IRawInputSource interface, nothing else in the sim loop needs to change.
 #pragma once
 #include <mutex>
 #include <string>
@@ -24,12 +15,7 @@ struct RawInputFrame {
     double steering = 0.0;  // -1 (full left) .. +1 (full right)
     std::string gear = "drive"; // "park" | "reverse" | "neutral" | "drive"
     // Speed the vehicle actually had *before* this frame was applied during
-    // the original recording. Only ever set by the recording loop (see
-    // mockingjay.cpp's runMockingjayLoop) — a live/forward source doesn't need
-    // it, but reverse replay does: exactly undoing a tick's displacement
-    // requires the speed that tick actually ran at, not whatever speed a
-    // fresh accel-integration from rest would produce in reverse. See the
-    // reverse_undo path in runMockingjayLoop for the math.
+    // the original recording.
     double pre_tick_speed_mps = 0.0;
 };
 
