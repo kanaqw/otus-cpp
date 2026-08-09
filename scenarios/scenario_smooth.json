@@ -1,0 +1,244 @@
+{
+  "meta": {
+    "name": "unnamed_scenario",
+    "created": "2026-07-18T11:51:32.761Z",
+    "grid_size_m": 1
+  },
+  "vehicle": {
+    "x": -18,
+    "y": 10,
+    "heading_deg": 0
+  },
+  "vehicle_config": {
+    "max_speed_mps": 20,
+    "max_steer_deg": 34,
+    "max_accel_mps2": 3,
+    "max_decel_mps2": -6,
+    "wheelbase_m": 2.7,
+    "gear": "drive"
+  },
+  "route": [
+    {
+      "id": 1,
+      "x": -17,
+      "y": 10,
+      "target_speed_mps": 8,
+      "curved": true,
+      "ctrl_x": -9.022727272727273,
+      "ctrl_y": 5.7272727272727275
+    },
+    {
+      "id": 2,
+      "x": -2,
+      "y": 10,
+      "target_speed_mps": 8,
+      "curved": true,
+      "ctrl_x": 11.931818181818182,
+      "ctrl_y": 12.727272727272727
+    },
+    {
+      "id": 3,
+      "x": 3,
+      "y": 3,
+      "target_speed_mps": 8,
+      "curved": true,
+      "ctrl_x": -4.9772727272727275,
+      "ctrl_y": -3.272727272727273
+    },
+    {
+      "id": 4,
+      "x": -2,
+      "y": -6,
+      "target_speed_mps": 8,
+      "curved": true,
+      "ctrl_x": 1.75,
+      "ctrl_y": -7.7727272727272725
+    },
+    {
+      "id": 5,
+      "x": -4,
+      "y": -10,
+      "target_speed_mps": 8,
+      "curved": true,
+      "ctrl_x": -10.886363636363637,
+      "ctrl_y": -13.181818181818182
+    },
+    {
+      "id": 6,
+      "x": -18,
+      "y": -10,
+      "target_speed_mps": 8
+    }
+  ],
+  "trajectory": [
+    {
+      "id": 7,
+      "x": -17,
+      "y": 10,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 8,
+      "x": -14,
+      "y": 9,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 9,
+      "x": -12,
+      "y": 8,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 10,
+      "x": -9,
+      "y": 8,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 11,
+      "x": -6,
+      "y": 8,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 12,
+      "x": -3,
+      "y": 9,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 13,
+      "x": -1,
+      "y": 10,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 14,
+      "x": 2,
+      "y": 10,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 15,
+      "x": 5,
+      "y": 10,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 16,
+      "x": 6,
+      "y": 8,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 17,
+      "x": 5,
+      "y": 6,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 18,
+      "x": 4,
+      "y": 4,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 19,
+      "x": 2,
+      "y": 2,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 20,
+      "x": 0,
+      "y": 0,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 21,
+      "x": -2,
+      "y": -3,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 22,
+      "x": -2,
+      "y": -5,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 23,
+      "x": -1,
+      "y": -7,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 24,
+      "x": -2,
+      "y": -9,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 25,
+      "x": -4,
+      "y": -10,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 26,
+      "x": -8,
+      "y": -11,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 27,
+      "x": -11,
+      "y": -12,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 28,
+      "x": -13,
+      "y": -11,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 29,
+      "x": -16,
+      "y": -11,
+      "target_speed_mps": 8,
+      "t_s": -1
+    },
+    {
+      "id": 30,
+      "x": -18,
+      "y": -10,
+      "target_speed_mps": 8,
+      "t_s": -1
+    }
+  ],
+  "obstacles": []
+}
