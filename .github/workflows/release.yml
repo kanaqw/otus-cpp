@@ -6,6 +6,7 @@ on:
       - master
       - allocator
       - feature/github_actions
+      - diploma
 
 jobs:
   build:
@@ -35,6 +36,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ip_filter-0.0.${{ github.run_number }}-Linux.deb
-          asset_name: ip_filter-0.0.${{ github.run_number }}-Linux.deb
+          asset_path: ./sim_runner-0.0.${{ github.run_number }}-Linux.deb
+          asset_name: sim_runner-0.0.${{ github.run_number }}-Linux.deb
           asset_content_type: application/vnd.debian.binary-package
