@@ -1,54 +1,39 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
+project(control_sim_ground CXX)
 
-set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
-set(PROJECT_VERSION 0.0.${PATCH_VERSION})
-
-project(ip_filter VERSION ${PROJECT_VERSION})
-
-configure_file(version.h.in version.h)
-
-add_executable(ip_filter_cli main.cpp)
-set(project_srcs
-    ip_filter/ip_filter.cpp
-    )
-add_library(ip_filter ${project_srcs})
-
-set_target_properties(ip_filter_cli ip_filter PROPERTIES
-    CXX_STANDARD 14
-    CXX_STANDARD_REQUIRED ON
-)
-
-target_include_directories(ip_filter
-    PRIVATE "${CMAKE_BINARY_DIR}/ip_filter"
-)
-
-target_link_libraries(ip_filter_cli PRIVATE
-    ip_filter
-)
-
-if (MSVC)
-    target_compile_options(ip_filter_cli PRIVATE
-        /W4
-    )
-    target_compile_options(ip_filter PRIVATE
-        /W4
-    )
-
-else ()
-    target_compile_options(ip_filter_cli PRIVATE
-        -Wall -Wextra -pedantic -Werror
-    )
-    target_compile_options(ip_filter PRIVATE
-        -Wall -Wextra -pedantic -Werror
-    )
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
-install(TARGETS ip_filter_cli RUNTIME DESTINATION bin)
+include(FetchContent)
+FetchContent_Declare(
+  json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.11.3
+)
+# Skip building nlohmann's own tests
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(json)
 
-set(CPACK_GENERATOR DEB)
-set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
-set(CPACK_PACKAGE_CONTACT example@example.com)
-include(CPack)
+find_package(Threads REQUIRED)
 
+add_executable(sim_runner
+  src/main.cpp
+  src/cli_args.cpp
+  src/sim_loop.cpp
+  src/mockingjay.cpp
+  src/scenario.cpp
+  src/vehicle_model.cpp
+  src/control_interface.cpp
+  src/mock_modules.cpp
+  src/teleop_input.cpp
+  src/ws_server.cpp
+)
+
+target_include_directories(sim_runner PRIVATE include)
+target_link_libraries(sim_runner PRIVATE nlohmann_json::nlohmann_json Threads::Threads)
+
+# ws_server.hpp uses raw POSIX sockets (Linux/macOS). On Windows you'd need
+# Winsock2 (see the #ifdef stub at the top of include/ws_server.hpp).
