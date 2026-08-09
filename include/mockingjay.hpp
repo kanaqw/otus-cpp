@@ -50,11 +50,7 @@ void runMockingjayLoop(const sim::Scenario& scenario, const Args& args, sim::WsS
                         sim::VehicleState* out_end_state = nullptr,
                         bool reverse_undo = false);
 
-// Silently re-simulates a recording (no WS ticks, no CSV) from `start_state`
-// to produce the ghost-trace points the browser draws so you can see where
-// Replay Forward / Replay Reverse would actually take the vehicle before
-// committing to either — same VehicleModel integration runMockingjayLoop
-// uses, just collecting positions instead of streaming/logging them.
+
 std::vector<std::pair<double, double>> mockingjayPreviewPath(
     const sim::Scenario& base_scenario, const sim::VehicleState& start_state,
     const std::vector<sim::RawInputFrame>& frames, bool reverse, double dt);
